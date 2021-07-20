@@ -1,5 +1,6 @@
 version: "3.8"
 services: 
-    build: 76527413/jsartoolkit5
-    ports: 
-        - 443:443
+    jsartoolkit5:
+        image: 76527413/jsartoolkit5
+        ports: 
+            - 443:443

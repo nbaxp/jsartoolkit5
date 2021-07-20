@@ -15,10 +15,11 @@ RUN npm run build-local
 
 FROM nginx:1.21.0
 
-COPY --from=build /src/build /usr/share/nginx/html
-COPY --from=build /src/doc /usr/share/nginx/html
-COPY --from=build /src/examples /usr/share/nginx/html
-COPY --from=build /src/js /usr/share/nginx/html
+COPY --from=build /src/build /usr/share/nginx/html/build
+COPY --from=build /src/doc /usr/share/nginx/html/doc
+COPY --from=build /src/examples /usr/share/nginx/html/examples
+COPY --from=build /src/js /usr/share/nginx/html/js
+COPY  index.html /usr/share/nginx/html
 COPY  default.conf /etc/nginx/conf.d
 COPY  server.crt /etc/nginx
 COPY  server.key /etc/nginx
