@@ -46,7 +46,7 @@
                     document.body.className = arController.orientation;
 
                     arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
-                    arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_4x4);
+                    arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
 
                     var renderer = new THREE.WebGLRenderer({ antialias: true });
                     if (arController.orientation === 'portrait') {
@@ -66,7 +66,7 @@
                     document.body.insertBefore(renderer.domElement, document.body.firstChild);
 
                     // See /doc/patterns/Matrix code 3x3 (72dpi)/20.png
-                    var markerRoot = arController.createThreeBarcodeMarker(20,3);
+                    var markerRoot = arController.createThreeBarcodeMarker(20);
 
                     var sphere = new THREE.Mesh(
                         new THREE.SphereGeometry(0.5, 8, 8),
