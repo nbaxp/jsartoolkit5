@@ -8,6 +8,7 @@ RUN cat /emsdk_portable/emscripten/tag-1.39.4/tools/ports/libjpeg.py
 
 RUN apt update && apt install -y git
 RUN git clone --depth=1 -b master https://github.com/artoolkitx/jsartoolkit5.git /src
+RUN sed "s#PAGES_MAX\s*10#PAGES_MAX 1000#g" emscripten/ARToolKitJS.cpp
 RUN cd emscripten && git submodule update --init
 RUN npm install
 RUN npm run build-local
@@ -18,6 +19,6 @@ COPY --from=build build /usr/share/nginx/html
 COPY --from=build doc /usr/share/nginx/html
 COPY --from=build examples /usr/share/nginx/html
 COPY --from=build js /usr/share/nginx/html
-COPY --from=build default.conf /etc/nginx/conf.d
-COPY --from=build server.crt /etc/nginx
-COPY --from=build server.key /etc/nginx
+COPY  default.conf /etc/nginx/conf.d
+COPY  server.crt /etc/nginx
+COPY  server.key /etc/nginx
