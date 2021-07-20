@@ -1,6 +1,8 @@
 version: "3.8"
 services: 
     jsartoolkit5:
-        image: 76527413/jsartoolkit5
+        image: 76527413/jsartoolkit5:latest
         ports: 
             - 443:443
+        volumes: 
+            - ./index.html:/usr/share/nginx/html/index.html
