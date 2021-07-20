@@ -1,0 +1,7 @@
+#!/bin/bash
+TAG=$GIT_BRANCH.$DOCKER_TAG
+VERSION=5.0
+for tag in {$TAG.$VERSION,$TAG.$(git rev-parse --short HEAD),$TAG.$(date -u +"%Y-%m-%dT%H-%M-%SZ")}; do
+    docker tag $IMAGE_NAME $DOCKER_REPO:$tag
+    docker push $DOCKER_REPO:$tag
+done
