@@ -16,7 +16,7 @@ RUN sed -i "s#PAGES_MAX\s*10#PAGES_MAX 1000#g" emscripten/ARToolKitJS.cpp
 RUN cd emscripten && git submodule update --init
 RUN sed -i "s#PAGES_MAX\s*64#PAGES_MAX 1000#g" emscripten/artoolkit5/include/ARWrapper/ARController.h
 
-RUN npm config set registry https://registry.npm.taobao.org
+#RUN npm config set registry https://registry.npm.taobao.org
 RUN npm install --verbose
 RUN npm install
 RUN npm run build-local
