@@ -7,7 +7,7 @@ RUN sed -i s#https://dl.bintray.com/homebrew/mirror/jpeg-9c.tar.gz#https://stora
 RUN cat /emsdk_portable/emscripten/tag-1.39.4/tools/ports/libjpeg.py
 
 RUN apt update && apt install -y git
-RUN git clone --depth=1 -b master https://github.com/artoolkitx/jsartoolkit5.git /src
+RUN git clone --depth=1 -b master https://github.com/webarkit/jsartoolkit5.git /src
 RUN sed -i "s#PAGES_MAX\s*10#PAGES_MAX 1000#g" emscripten/ARToolKitJS.cpp
 RUN cd emscripten && git submodule update --init
 RUN sed -i "s#PAGES_MAX\s*64#PAGES_MAX 1000#g" emscripten/artoolkit5/include/ARWrapper/ARController.h
