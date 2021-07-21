@@ -6,11 +6,18 @@ RUN sed -i s#2b581c60ae401a79bbbe748ff2deeda5acd50bfd2ea22e5926e36d34b9ebcffb658
 RUN sed -i s#https://dl.bintray.com/homebrew/mirror/jpeg-9c.tar.gz#https://storage.googleapis.com/webassembly/emscripten-ports/jpegsrc.v9c.tar.gz#g /emsdk_portable/emscripten/tag-1.39.4/tools/ports/libjpeg.py
 RUN cat /emsdk_portable/emscripten/tag-1.39.4/tools/ports/libjpeg.py
 
+RUN cat /etc/apt/sources.list && \
+    sed -i 's|deb.debian.org|mirrors.ustc.edu.cn|g' /etc/apt/sources.list && \
+    sed -i 's|security.debian.org/debian-security|mirrors.ustc.edu.cn/debian-security|g' /etc/apt/sources.list
+
 RUN apt update && apt install -y git
-RUN git clone --depth=1 -b master https://github.com/webarkit/jsartoolkit5.git /src
+RUN git clone --depth=1 -b fixing-nft https://github.com/AR-js-org/jsartoolkit5.git /src
 RUN sed -i "s#PAGES_MAX\s*10#PAGES_MAX 1000#g" emscripten/ARToolKitJS.cpp
 RUN cd emscripten && git submodule update --init
 RUN sed -i "s#PAGES_MAX\s*64#PAGES_MAX 1000#g" emscripten/artoolkit5/include/ARWrapper/ARController.h
+
+RUN npm config set registry https://registry.npm.taobao.org
+RUN npm install --verbose
 RUN npm install
 RUN npm run build-local
 
