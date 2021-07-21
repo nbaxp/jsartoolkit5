@@ -11,9 +11,10 @@ RUN cat /etc/apt/sources.list && \
     sed -i 's|security.debian.org/debian-security|mirrors.ustc.edu.cn/debian-security|g' /etc/apt/sources.list
 
 RUN apt update && apt install -y git
-RUN git clone --depth=1 -b fixing-nft https://github.com/AR-js-org/jsartoolkit5.git /src
+RUN git clone --depth=1 -b nftfix https://github.com/hiukim/jsartoolkit5.git /src
 RUN sed -i "s#PAGES_MAX\s*10#PAGES_MAX 1000#g" emscripten/ARToolKitJS.cpp
-RUN cd emscripten && git submodule update --init
+#RUN cd emscripten && git submodule update --init
+RUN cd emscripten && rm -rf artoolkit5 && git clone --depth=1 -b fixnft https://github.com/hiukim/artoolkit5.git && ls artoolkit5
 RUN sed -i "s#PAGES_MAX\s*64#PAGES_MAX 1000#g" emscripten/artoolkit5/include/ARWrapper/ARController.h
 
 #RUN npm config set registry https://registry.npm.taobao.org
