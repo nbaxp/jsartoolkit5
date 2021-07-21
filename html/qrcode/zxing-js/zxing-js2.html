@@ -1,0 +1,97 @@
+<html>
+
+<head>
+	<title>https://github.com/zxing-js/browser</title>
+</head>
+
+<body>
+    <script type="text/javascript" src="zxing-browser.min.js"></script>
+	<script>
+        var codeReader;
+		// qrcode.callback = function(){
+		// 	console.log(arguments);
+		// };
+		var tick = function () {
+			codeReader.decodeFromVideoElement(document.querySelector('video')).then(function(){
+                console.log(arguments);
+            });
+			requestAnimationFrame(tick);
+		};
+
+		var configuration = {};
+		var video = document.createElement('video');
+		navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+		var mediaDevicesConstraints = {
+
+		};
+		var onError = configuration.onError || function (err) {
+			console.error("ARController: Failed to load ARCameraParam", err);
+		}
+		var success = function (stream) {
+			//DEPRECATED: don't use window.URL.createObjectURL(stream) any longer it might be removed soon. Only there to support old browsers src: https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL
+			if (window.URL.createObjectURL) {
+				//Need to add try-catch because iOS 11 fails to createObjectURL from stream. As this is deprecated  we should remove this soon
+				try {
+					video.srcObject = stream; // DEPRECATED: this feature is in the process to being deprecated
+				}
+				catch (ex) {
+					// Nothing todo, the purpose of this is to remove an error from the console on iOS 11
+				}
+			}
+			video.srcObject = stream; // This should be used instead. Which has the benefit to give us access to the stream object
+			readyToPlay = true;
+			video.autoplay = true;
+			video.playsInline = true;
+			video.play(); // Try playing without user input, should work on non-Android Chrome
+			document.body.appendChild(this.video);
+            codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+			codeReader.decodeFromVideoElement(document.querySelector('video'), (result, error, controls) => {
+                if(result)
+                {
+                    console.log(result.text);
+                }
+            });
+		};
+		if (navigator.mediaDevices || window.MediaStreamTrack.getSources) {
+			if (navigator.mediaDevices) {
+				navigator.mediaDevices.getUserMedia({
+					audio: false,
+					video: mediaDevicesConstraints
+				}).then(success, onError);
+			} else {
+				// This function of accessing the media device is deprecated and outdated and shouldn't be used anymore.
+				// @ts-ignore: ignored because it is needed to support older browsers
+				window.MediaStreamTrack.getSources(function (sources) {
+					var facingDir = mediaDevicesConstraints.facingMode;
+					if (facing && facing.exact) {
+						facingDir = facing.exact;
+					}
+					for (var i = 0; i < sources.length; i++) {
+						if (sources[i].kind === 'video' && sources[i].facing === facingDir) {
+							hdConstraints.video.mandatory.sourceId = sources[i].id;
+							break;
+						}
+					}
+					if (facing && facing.exact && !hdConstraints.video.mandatory.sourceId) {
+						onError('Failed to get camera facing the wanted direction');
+					} else {
+						if (navigator.getUserMedia) {
+							navigator.getUserMedia(hdConstraints, success, onError);
+						} else {
+							onError('navigator.getUserMedia is not supported on your browser');
+						}
+					}
+				});
+			}
+		} else {
+			if (navigator.getUserMedia) {
+				navigator.getUserMedia(hdConstraints, success, onError);
+			} else {
+				onError('navigator.getUserMedia is not supported on your browser');
+			}
+		}
+
+	</script>
+</body>
+
+</html>
