@@ -26,6 +26,7 @@
 
 <body>
     <script type="text/javascript" src="qrcode/zxing-js/zxing-browser.min.js"></script>
+    <!-- <script src="build/artoolkit_wasm.js"></script> -->
     <script async src="build/artoolkit.debug.js"></script>
     <script src="js/artoolkit.api.js"></script>
     <script async src="examples/js/third_party/three.js/three.min.js"></script>
@@ -127,12 +128,18 @@
                     sphere.position.x = 80;
                     sphere.position.y = 80;
                     sphere.scale.set(80, 80, 80);
-
-                    arController.loadNFTMarker('examples/DataNFT/pinball', function (markerId) {
-                        var markerRoot = arController.createThreeNFTMarker(markerId);
-                        markerRoot.add(sphere);
-                        arScene.scene.add(markerRoot);
-                    });
+                    for (var i = 1; i < 2; i++) {
+                        arController.loadNFTMarkers('DataNFT/' + i, function (markerId) {
+                            var markerRoot = arController.createThreeNFTMarker(markerId);
+                            //markerRoot.add(sphere);
+                            arScene.scene.add(markerRoot);
+                        });
+                    }
+                    // arController.loadNFTMarker('examples/DataNFT/pinball', function (markerId) {
+                    //     var markerRoot = arController.createThreeNFTMarker(markerId);
+                    //     markerRoot.add(sphere);
+                    //     arScene.scene.add(markerRoot);
+                    // });
                     //
                     var tick = function () {
                         arScene.process();
@@ -142,13 +149,6 @@
                         rotationV *= 0.8;
                         requestAnimationFrame(tick);
                     };
-                    //    var codeReader = new ZXingBrowser.BrowserMultiFormatReader();
-                    //     codeReader.decodeFromCanvas(arController.canvas, (result, error, controls) => {
-                    //         if (result) {
-                    //             console.log(result.text);
-                    //         }
-                    //     });
-
                     tick();
                 }
             });
