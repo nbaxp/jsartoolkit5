@@ -25,7 +25,7 @@
 </head>
 
 <body>
-    <!-- <script type="text/javascript" src="qrcode/zxing-js/zxing-browser.min.js"></script> -->
+    <script type="text/javascript" src="qrcode/zxing-js/zxing-browser.min.js"></script>
     <script src="build/artoolkit_wasm.js"></script>
     <!-- <script async src="build/artoolkit.debug.js"></script> -->
     <!-- <script src="js/artoolkit.api.js"></script> -->
@@ -135,10 +135,10 @@
                     arController.loadNFTMarkers(list, function (markerIds) {
                         for (markerId in markerIds) {
                             console.log(markerId);
-                            var markerRoot = arController.createThreeNFTMarker(markerId);
+                            //var markerRoot = arController.getNFTMarker(parseInt(markerId));
+                            var markerRoot = arController.createThreeNFTMarker(parseInt(markerId));
                             markerRoot.add(sphere);
                             arScene.scene.add(markerRoot);
-                            //break;
                         }
                     });
                     //

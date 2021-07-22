@@ -1,7 +1,7 @@
 version: "3.8"
 services:
     jsartoolkit5:
-        image: 76527413/jsartoolkit5:latest
+        image: 76527413/jsartoolkit5:webarkit
         ports:
             - 80:80
             - 443:443
