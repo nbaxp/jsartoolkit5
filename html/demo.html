@@ -26,8 +26,8 @@
 
 <body>
     <script type="text/javascript" src="qrcode/zxing-js/zxing-browser.min.js"></script>
-    <script src="build/artoolkit_wasm.js"></script>
-    <!-- <script async src="build/artoolkit.debug.js"></script> -->
+    <!-- <script src="build/artoolkit_wasm.js"></script> -->
+    <script src="build/artoolkit.min.js"></script>
     <!-- <script src="js/artoolkit.api.js"></script> -->
     <script async src="examples/js/third_party/three.js/three.min.js"></script>
     <script async src="js/artoolkit.three.js"></script>
@@ -84,16 +84,16 @@
 
                     document.body.insertBefore(renderer.domElement, document.body.firstChild);
 
-                    var markerRoot = arController.createThreeBarcodeMarker(20);
+                    // var markerRoot = arController.createThreeBarcodeMarker(20);
 
-                    var sphere = new THREE.Mesh(
-                        new THREE.SphereGeometry(0.5, 8, 8),
-                        new THREE.MeshNormalMaterial()
-                    );
-                    sphere.material.flatShading;
-                    sphere.position.z = 0.5;
-                    markerRoot.add(sphere);
-                    arScene.scene.add(markerRoot);
+                    // var sphere = new THREE.Mesh(
+                    //     new THREE.SphereGeometry(0.5, 8, 8),
+                    //     new THREE.MeshNormalMaterial()
+                    // );
+                    // sphere.material.flatShading;
+                    // sphere.position.z = 0.5;
+                    // markerRoot.add(sphere);
+                    // arScene.scene.add(markerRoot);
 
                     var rotationV = 0;
                     var rotationTarget = 0;
@@ -104,18 +104,18 @@
                     }, false);
 
                     //patt
-                    var torus = new THREE.Mesh(
-                        new THREE.TorusGeometry(0.3, 0.2, 8, 8),
-                        new THREE.MeshNormalMaterial()
-                    );
-                    torus.material.shading = THREE.FlatShading;
-                    torus.position.z = 0.5;
-                    torus.rotation.x = Math.PI / 2;
+                    // var torus = new THREE.Mesh(
+                    //     new THREE.TorusGeometry(0.3, 0.2, 8, 8),
+                    //     new THREE.MeshNormalMaterial()
+                    // );
+                    // torus.material.shading = THREE.FlatShading;
+                    // torus.position.z = 0.5;
+                    // torus.rotation.x = Math.PI / 2;
 
                     arController.loadMarker('examples/Data/patt.kanji', function (markerId) {
-                        var markerRoot = arController.createThreeMarker(markerId);
-                        markerRoot.add(torus);
-                        arScene.scene.add(markerRoot);
+                        // var markerRoot = arController.createThreeMarker(markerId);
+                        // markerRoot.add(torus);
+                        // arScene.scene.add(markerRoot);
                     });
                     //
                     //nft
@@ -129,16 +129,16 @@
                     sphere.position.y = 80;
                     sphere.scale.set(80, 80, 80);
                     var list = [];
-                    for (var i = 1; i < 29; i++) {
+                    for (var i = 1; i < 78; i++) {
                         list.push('DATANFT/' + i)
                     }
                     arController.loadNFTMarkers(list, function (markerIds) {
                         for (markerId in markerIds) {
                             console.log(markerId);
                             //var markerRoot = arController.getNFTMarker(parseInt(markerId));
-                            var markerRoot = arController.createThreeNFTMarker(parseInt(markerId));
-                            markerRoot.add(sphere);
-                            arScene.scene.add(markerRoot);
+                            // var markerRoot = arController.createThreeNFTMarker(parseInt(markerId));
+                            // markerRoot.add(sphere);
+                            // arScene.scene.add(markerRoot);
                         }
                     });
                     //
