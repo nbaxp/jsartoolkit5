@@ -25,10 +25,10 @@
 </head>
 
 <body>
-    <script type="text/javascript" src="qrcode/zxing-js/zxing-browser.min.js"></script>
-    <!-- <script src="build/artoolkit_wasm.js"></script> -->
-    <script async src="build/artoolkit.debug.js"></script>
-    <script src="js/artoolkit.api.js"></script>
+    <!-- <script type="text/javascript" src="qrcode/zxing-js/zxing-browser.min.js"></script> -->
+    <script src="build/artoolkit_wasm.js"></script>
+    <!-- <script async src="build/artoolkit.debug.js"></script> -->
+    <!-- <script src="js/artoolkit.api.js"></script> -->
     <script async src="examples/js/third_party/three.js/three.min.js"></script>
     <script async src="js/artoolkit.three.js"></script>
     <script>
@@ -128,18 +128,19 @@
                     sphere.position.x = 80;
                     sphere.position.y = 80;
                     sphere.scale.set(80, 80, 80);
-                    for (var i = 1; i < 2; i++) {
-                        arController.loadNFTMarkers('DataNFT/' + i, function (markerId) {
-                            var markerRoot = arController.createThreeNFTMarker(markerId);
-                            //markerRoot.add(sphere);
-                            arScene.scene.add(markerRoot);
-                        });
+                    var list = [];
+                    for (var i = 1; i < 29; i++) {
+                        list.push('DATANFT/' + i)
                     }
-                    // arController.loadNFTMarker('examples/DataNFT/pinball', function (markerId) {
-                    //     var markerRoot = arController.createThreeNFTMarker(markerId);
-                    //     markerRoot.add(sphere);
-                    //     arScene.scene.add(markerRoot);
-                    // });
+                    arController.loadNFTMarkers(list, function (markerIds) {
+                        for (markerId in markerIds) {
+                            console.log(markerId);
+                            var markerRoot = arController.createThreeNFTMarker(markerId);
+                            markerRoot.add(sphere);
+                            arScene.scene.add(markerRoot);
+                            //break;
+                        }
+                    });
                     //
                     var tick = function () {
                         arScene.process();
