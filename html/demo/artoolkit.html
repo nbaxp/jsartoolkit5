@@ -1,0 +1,132 @@
+<html>
+
+<head>
+    <title>artoolkit</title>
+    <style>
+        .app{
+            text-align: center;
+        }
+        
+        .desktop video {
+            transform: scale(-1, 1);
+            width: 50%;
+        }
+
+        video {
+            width: 100%;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <video id="video" width="640" playsInline muted autoplay></video>
+    </div>
+    <div id="status"></div>
+    <div id="loading" style="display: none;">loading...</div>
+    <p>result: <b id="maker" style="color: red;"></b></p>
+    <!-- <script async src="/build/artoolkit.debug.js"></script> -->
+    <script async src="/build/artoolkit_wasm.js"></script>
+    <script src="/qrcode/zxing-js/zxing-browser.min.js"></script>
+    <script>
+        function success(stream) {
+
+            video.srcObject = stream;
+            video.onclick = function () { video.play(); };
+            video.play();
+
+            codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+            codeReader.decodeFromVideoElement(document.querySelector('#video'), (result, error, controls) => {
+                if (result) {
+                    log("QRCODE", result.text);
+                }
+            });
+
+            document.querySelector("#loading").style.display = 'block';
+            var profile = isMobile() ? '/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat' : '/examples/Data/camera_para.dat';
+            var cameraParam = new ARCameraParam(profile);
+
+            cameraParam.onload = function () {
+                var arController = new ARController(video, cameraParam);
+
+                arController.addEventListener('getMarker', function (ev) {
+                    var marker = ev.data.marker;
+                    if (ev.data.type === artoolkit.PATTERN_MARKER) {
+                        log("PATTERN:", marker.idPatt);
+                    } else if (ev.data.type === artoolkit.BARCODE_MARKER) {
+                        log("BARCODE", marker.idMatrix);
+                    }
+                });
+
+                arController.addEventListener('getNFTMarker', function (ev) {
+                    log("NFT", ev.data.marker.id);
+                });
+
+                arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
+                arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+
+                arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
+                });
+
+                var list = [];
+                for (var i = 1; i < 78; i++) {
+                    list.push('/DATANFT/' + i);
+                }
+                arController.loadNFTMarkers(list, function (markerIds) {
+                    console.log(markerIds);
+                    document.querySelector("#status").innerHTML = markerIds.length;
+                    document.querySelector("#loading").style.display = 'none';
+                });
+
+                var tick = function () {
+                    arController.process();
+                    requestAnimationFrame(tick);
+                };
+
+                tick();
+            };
+        }
+
+        function errorCallback(e) {
+            console.log("Can't access user media", e);
+        }
+
+        function isMobile() {
+            return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
+        }
+
+        function log(type, code) {
+            var message = type + " : " + code;
+            console.log(message);
+            document.querySelector('#maker').innerHTML = message;
+        }
+    </script>
+    <script>
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+        var hdConstraints = {
+            audio: false,
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+            }
+        };
+
+        if (isMobile()) {
+            hdConstraints.video.facingMode = { "exact": "environment" };
+        }
+        else {
+            document.body.className = "desktop";
+        }
+
+        if (navigator.getUserMedia) {
+            navigator.getUserMedia(hdConstraints, success, errorCallback);
+        } else {
+            errorCallback('');
+        }
+    </script>
+
+</body>
+
+</html>

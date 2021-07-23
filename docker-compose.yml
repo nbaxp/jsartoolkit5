@@ -7,6 +7,12 @@ services:
             - 443:443
         volumes:
             - ./default.conf:/etc/nginx/conf.d/default.conf
+            - ./html/images:/usr/share/nginx/html/images
+            - ./html/index.html:/usr/share/nginx/html/index.html
             - ./html/demo.html:/usr/share/nginx/html/demo.html
             - ./html/DATANFT:/usr/share/nginx/html/DATANFT
             - ./html/qrcode:/usr/share/nginx/html/qrcode
+            - ./html/multi_nft.html:/usr/share/nginx/html/examples/nft_improved_worker/multi_nft.html
+            - ./html/multi_wasm_nft.html:/usr/share/nginx/html/examples/nft_improved_worker/multi_wasm_nft.html
+            - ./html/DATANFT:/usr/share/nginx/html/js/DATANFT
+            - ./html/demo:/usr/share/nginx/html/demo

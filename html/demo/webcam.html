@@ -1,0 +1,67 @@
+<html>
+
+<head>
+    <title>webcam</title>
+    <style>
+        .app{
+            text-align: center;
+        }
+        
+        .desktop video {
+            transform: scale(-1, 1);
+            width: 50%;
+        }
+
+        video {
+            width: 100%;
+            margin: 0 auto;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <video id="video" width="640" playsInline muted autoplay></video>
+    </div>
+    <script>
+        function success(stream) {
+            video.srcObject = stream;
+            video.play();
+        }
+
+        function errorCallback(e) {
+            console.log("Can't access user media", e);
+        }
+
+        function isMobile() {
+            return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
+        }
+    </script>
+    <script>
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+        var hdConstraints = {
+            audio: false,
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+            }
+        };
+
+        if (isMobile()) {
+            hdConstraints.video.facingMode = { "exact": "environment" };
+        }
+        else {
+            document.body.className = "desktop";
+        }
+
+        if (navigator.getUserMedia) {
+            navigator.getUserMedia(hdConstraints, success, errorCallback);
+        } else {
+            errorCallback('');
+        }
+    </script>
+
+</body>
+
+</html>
