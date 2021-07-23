@@ -1,31 +1,51 @@
 <html>
 
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.5, maximum-scale=1">
     <title>webcam</title>
     <style>
-        .app{
-            text-align: center;
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
         }
-        
-        .desktop video {
-            transform: scale(-1, 1);
-            width: 50%;
+
+        .app {
+            text-align: center;
         }
 
         video {
             width: 100%;
-            margin: 0 auto;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        #message {
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 1em;
+            background: #fff;
+            position: absolute;
+            width: 100%;
+            height: 5em;
+            top: 5em;
+            opacity: .5;
+            color: red;
         }
     </style>
 </head>
 
 <body>
     <div class="app">
-        <video id="video" width="640" playsInline muted autoplay></video>
+        <video id="video" playsInline muted autoplay></video>
     </div>
     <script>
         function success(stream) {
             video.srcObject = stream;
+            video.onloadedmetadata = function (e) {
+                video.width = e.srcElement.videoWidth;
+                video.height = e.srcElement.videoHeight
+            };
             video.play();
         }
 
@@ -35,6 +55,11 @@
 
         function isMobile() {
             return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
+        }
+    </script>
+    <script>
+        window.onorientationchange = function () {
+
         }
     </script>
     <script>
