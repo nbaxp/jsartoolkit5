@@ -56,10 +56,6 @@ namespace MarkerTex
                         if (e.Data != null)
                         {
                             Debug.WriteLine(e.Data);
-                            //if (e.Data.StartsWith("Select extraction level for tracking features"))
-                            //{
-                            //    (s as Process).StandardInput.WriteLine(this.numericUpDown1.Value.ToString());
-                            //}
                             if (e.Data.StartsWith("Enter the minimum image resolution"))
                             {
                                 if (!minRes.HasValue || !maxRes.HasValue)
@@ -140,7 +136,7 @@ namespace MarkerTex
         private void button3_Click(object sender, EventArgs e)
         {
             var files = Directory.GetFiles(this.textBox1.Text, "*.jpg");
-            var i = 1;
+            var i = 0;
             foreach (var item in files)
             {
                 var dist = Path.Combine(Path.GetDirectoryName(item), $"{i}.jpg");
