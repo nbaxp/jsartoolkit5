@@ -38,9 +38,10 @@
 <body>
     <div class="app">
         <video id="video" playsInline muted autoplay width="640" height="480"></video>
+        <canvas id="canvas"></canvas>
         <div id="message">loading...</div>
     </div>
-    <!-- <script async src="/build/artoolkit.debug.js"></script> -->
+    <script src="/examples/js/third_party/three.js/three.min.js"></script>
     <script async src="/build/artoolkit_wasm.js"></script>
     <script src="/qrcode/zxing-js/zxing-browser.min.js"></script>
     <script>
@@ -53,13 +54,31 @@
         }
     </script>
     <script>
-        function success(stream) {
+        var scene = new THREE.Scene();
 
+        var geometry = new THREE.BoxGeometry(1, 1, 1);
+        var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        var cube = new THREE.Mesh(geometry, material);
+        cube.matrixAutoUpdate = false;
+        scene.add(cube);
+
+        var camera;
+        var renderer;
+
+        function success(stream) {
             video.srcObject = stream;
             video.onclick = function () { video.play(); };
             video.onloadedmetadata = function (e) {
                 video.width = e.srcElement.videoWidth;
-                video.height = e.srcElement.videoHeight
+                video.height = e.srcElement.videoHeight;
+                //
+                var canvas = document.getElementById('canvas');
+                canvas.width = video.width;
+                canvas.height = video.height;
+                renderer = new THREE.WebGLRenderer({ canvas: canvas });
+                renderer.setSize(canvas.width, canvas.height);
+                camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
+                camera.position.z = 5;
             };
             video.play();
 
@@ -76,7 +95,7 @@
             cameraParam.onload = function () {
                 var arController = new ARController(video, cameraParam);
 
-                window.onorientationchange=function(e){
+                window.onorientationchange = function (e) {
                 }
 
                 arController.addEventListener('getMarker', function (ev) {
@@ -102,8 +121,19 @@
                     log('NFT Marker Count', markerIds.length);
                 });
 
+                var rotationV = 0;
+                var rotationTarget = 0;
+
                 var tick = function () {
                     arController.process();
+                    if (renderer) {
+                        renderer.render(scene, camera);
+                        // cube.rotation.x += 0.01;
+                        // cube.rotation.y += 0.01;
+                        rotationV += (rotationTarget - cube.rotation.z) * 0.05;
+                        cube.rotation.z += rotationV;
+                        rotationV *= 0.8;
+                    }
                     requestAnimationFrame(tick);
                 };
 
@@ -126,8 +156,20 @@
             else if (ev.data.type == artoolkit.NFT_MARKER) {
                 log("NFT", ev.data.marker.id);
             }
+
+            if (ev.data.type === artoolkit.BARCODE_MARKER) {
+                setProjectionMatrix(cube.matrix, ev.data.matrixGL_RH);
+            }
         }
 
+
+        function setProjectionMatrix(projectionMatrix, value) {
+            if (typeof projectionMatrix.elements.set === "function") {
+                projectionMatrix.elements.set(value);
+            } else {
+                projectionMatrix.elements = [].slice.call(value);
+            }
+        };
     </script>
     <script>
         navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
