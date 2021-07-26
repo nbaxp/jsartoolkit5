@@ -57,7 +57,15 @@
         var scene = new THREE.Scene();
 
         var geometry = new THREE.BoxGeometry(1, 1, 1);
-        var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
+        for (let i = 0; i < geometry.faces.length; i++) {
+            let hex = Math.random() * 0xffffff;
+            geometry.faces[i].color.setHex(hex);
+        }
+
+        var material = new THREE.MeshBasicMaterial({
+            vertexColors: THREE.FaceColors
+        });
+
         var cube = new THREE.Mesh(geometry, material);
         cube.matrixAutoUpdate = false;
         scene.add(cube);
