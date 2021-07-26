@@ -7,13 +7,50 @@
     <style>
         body {
             margin: 0;
+            padding: 0;
+            background-color: #000;
+        }
+
+        .app {
+            text-align: center;
+        }
+
+        video,
+        canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        canvas {
+            width: 100%!important;
+            height: 100%!important;
+            position: absolute;
+            left: 0;
+        }
+
+        #message {
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 1em;
+            background: #fff;
+            position: absolute;
+            width: 100%;
+            height: 5em;
+            top: 5em;
+            opacity: .5;
+            color: red;
         }
     </style>
 </head>
 
 <body>
-    <canvas id="canvas" width="640" height="480"></canvas>
-    <div class="page-content">
+    <div class="app">
+        <video id="video" playsInline muted autoplay></video>
+        <canvas id="canvas"></canvas>
+    </div>
+
+    <div class="page-content" style="display: none;">
         <label>scalar:<input id="scalar" type="range" min="-10" max="10" value="0" /></label>
         <div class="block-title">animation</div>
         <div class="list simple-list" id="animationblock">
@@ -37,8 +74,8 @@
         light2.position.set(0, 10, 0);
         scene.add(light2);
         var context = canvas.getContext('webgl2');
-        var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context, antialias: true });
-        renderer.setClearColor( 0xffffff, 0);
+        var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true,alpha: true });
+        renderer.setClearColor( 0x000000, 0 );
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.gammaOutput = true;
         renderer.gammaFactor = 2.2;
@@ -112,7 +149,7 @@
                     var id = 'toggle' + i;
                     var li = '<span class="">' + animation.name + '</span>';
                     li += '<label id="' + id + '" class="toggle toggle-init">';
-                    li += '<input type="checkbox" data-index='+i+'>'
+                    li += '<input type="checkbox" data-index=' + i + '>'
                     li += '<span class="toggle-icon"></span>';
                     li += '</label>';
                     var tag = document.createElement('li');
@@ -136,26 +173,77 @@
         var mixer;
         var actions = new Array();
         var model;
+        function load() {
+            loader.load(file, function (object) {
+                model = object;
+                var scene;
+                if (file.endsWith("glb") || file.endsWith("gltf")) {
+                    scene = object.scene || object.scenes[0];
+                }
+                else {
+                    scene = object
+                }
+                loadSence(scene);
+            });
 
-        loader.load(file, function (object) {
-            model = object;
-            var scene;
-            if (file.endsWith("glb") || file.endsWith("gltf")) {
-                scene = object.scene || object.scenes[0];
-            }
-            else {
-                scene = object
-            }
-            loadSence(scene);
-        });
+            var animate = function () {
+                requestAnimationFrame(animate);
+                if (mixer) mixer.update(clock.getDelta());
+                controls.update();
+                renderer.render(scene, camera);
+            };
+            animate();
+        }
+    </script>
+    <script>
+        function success(stream) {
+            video.srcObject = stream;
+            video.onloadedmetadata = function (e) {
+                canvas.width = video.width = e.srcElement.videoWidth;
+                canvas.height = video.height = e.srcElement.videoHeight
+            };
+            video.play();
+            setTimeout(() => {
+                load();
+            }, 0);
+        }
 
-        var animate = function () {
-            requestAnimationFrame(animate);
-            if (mixer) mixer.update(clock.getDelta());
-            controls.update();
-            renderer.render(scene, camera);
+        function errorCallback(e) {
+            console.log("Can't access user media", e);
+        }
+
+        function isMobile() {
+            return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
+        }
+    </script>
+    <script>
+        window.onorientationchange = function () {
+
+        }
+    </script>
+    <script>
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+        var hdConstraints = {
+            audio: false,
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+            }
         };
-        animate();
+
+        if (isMobile()) {
+            hdConstraints.video.facingMode = { "exact": "environment" };
+        }
+        else {
+            document.body.className = "desktop";
+        }
+
+        if (navigator.getUserMedia) {
+            navigator.getUserMedia(hdConstraints, success, errorCallback);
+        } else {
+            errorCallback('');
+        }
     </script>
 </body>
 

@@ -19,6 +19,12 @@
             height: 100%;
             object-fit: contain;
         }
+        canvas{
+            width: 100%!important;
+            height: 100%!important;
+            position: absolute;
+            left: 0;
+        }
 
         #message {
             font-size: 1.5em;
@@ -64,21 +70,18 @@
 
         var camera;
         var renderer;
+        var canvas = document.getElementById('canvas');
 
         function success(stream) {
             video.srcObject = stream;
             video.onclick = function () { video.play(); };
             video.onloadedmetadata = function (e) {
-                video.width = e.srcElement.videoWidth;
-                video.height = e.srcElement.videoHeight;
-                //
-                var canvas = document.getElementById('canvas');
-                canvas.width = video.width;
-                canvas.height = video.height;
-                renderer = new THREE.WebGLRenderer({ canvas: canvas });
+                canvas.width = video.width = e.srcElement.videoWidth;
+                canvas.height = video.height = e.srcElement.videoHeight
+                renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true,alpha: true });
                 renderer.setSize(canvas.width, canvas.height);
-                camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-                camera.position.z = 5;
+                camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
+                camera.position.z = 1;
             };
             video.play();
 
