@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.5, maximum-scale=1">
     <title>My first three.js app</title>
     <style>
         body {
@@ -17,16 +17,26 @@
 
         video,
         canvas {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+            height: 100vh;
+            width: auto;
+            text-align: center;
+            justify-content: center;
+            object-fit: cover;
+        }
+
+        video {
+            position: relative;
         }
 
         canvas {
-            width: 100% !important;
-            height: 100% !important;
+            width: auto !important;
+            height: 100vh !important;
             position: absolute;
+            top: 0;
             left: 0;
+            right: 0;
+            bottom: 0;
+            margin: auto;
         }
 
         #message {
@@ -62,6 +72,8 @@
     <script src="/demo/three.js/three.min.js"></script>
     <script src="/demo/three.js/js/controls/OrbitControls.js"></script>
     <script src="/demo/three.js/js/loaders/GLTFLoader.js"></script>
+    <script src="/demo/three.js/js/libs/fflate.min.js"></script>
+    <script src="/demo/three.js/js/loaders/FBXLoader.js"></script>
     <script src="/build/artoolkit_wasm.js"></script>
     <script src="/qrcode/zxing-js/zxing-browser.min.js"></script>
     <script>
@@ -250,8 +262,10 @@
             }
         }
 
-        var file = '/demo/test.glb';
-        var loader = new THREE.GLTFLoader();
+        // var file = '/demo/test.glb';
+        // var loader = new THREE.GLTFLoader();
+        var file = '/demo/test.fbx';
+        var loader = new THREE.FBXLoader();
         var mixer;
         var actions = new Array();
         var model;
@@ -324,9 +338,10 @@
                         //model.destory()
                         //var model = getModel(currentMarkerNumber);
                         //model.positon = ev.xx
-                        markerNumber = currentMarkerNumber;
+                        markerNumber = null;
                         var model = getModel(currentMarkerNumber);
                         model.visible = false;
+                        markerNumber = currentMarkerNumber;
                         var model = getModel(currentMarkerNumber);
                         model.visible = true;
                     }
