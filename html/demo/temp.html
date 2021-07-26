@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>My first three.js app</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #000;
+        }
+
+        .app {
+            text-align: center;
+        }
+
+        video,
+        canvas {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        canvas {
+            width: 100% !important;
+            height: 100% !important;
+            position: absolute;
+            left: 0;
+        }
+
+        #message {
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 1em;
+            background: #fff;
+            position: absolute;
+            width: 100%;
+            height: 5em;
+            top: 5em;
+            opacity: .5;
+            color: red;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <video id="video" playsInline muted autoplay></video>
+        <canvas id="canvas"></canvas>
+        <div id="message">loading...</div>
+    </div>
+
+    <div class="page-content" style="display: none;">
+        <label>scalar:<input id="scalar" type="range" min="-10" max="10" value="0" /></label>
+        <div class="block-title">animation</div>
+        <div class="list simple-list" id="animationblock">
+            <ul></ul>
+        </div>
+    </div>
+    <script src="/demo/jquery.min.js"></script>
+    <script src="/demo/three.js/three.min.js"></script>
+    <script src="/demo/three.js/js/controls/OrbitControls.js"></script>
+    <script src="/demo/three.js/js/loaders/GLTFLoader.js"></script>
+    <script src="/build/artoolkit_wasm.js"></script>
+    <script src="/qrcode/zxing-js/zxing-browser.min.js"></script>
+    <script>
+        function isMobile() {
+            return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
+        }
+    </script>
+    <script>
+        var markerNumber;
+    </script>
+    <script>
+        function errorCallback(e) {
+            console.log("Can't access user media", e);
+        }
+        function success(stream) {
+            video.srcObject = stream;
+            video.onloadedmetadata = function (e) {
+                canvas.width = video.width = e.srcElement.videoWidth;
+                canvas.height = video.height = e.srcElement.videoHeight
+                setTimeout(() => {
+                    load();
+                }, 0);
+                setTimeout(() => {
+                    load2();
+                }, 0);
+            };
+            video.play();
+        }
+        function load() {
+            codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+            codeReader.decodeFromVideoElement(document.querySelector('#video'), (result, error, controls) => {
+                if (result) {
+                    log("QRCODE", result.text);
+                }
+            });
+
+            var profile = isMobile() ? '/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat' : '/examples/Data/camera_para.dat';
+            var cameraParam = new ARCameraParam(profile);
+            cameraParam.onload = function () {
+                var arController = new ARController(video, cameraParam);
+
+                window.onorientationchange = function (e) {
+                }
+
+                arController.addEventListener('getMarker', function (ev) {
+                    getMarker(ev);
+                });
+
+                arController.addEventListener('getNFTMarker', function (ev) {
+                    getMarker(ev);
+                });
+
+                arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
+                arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+
+                arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
+                });
+
+                var list = [];
+                //78
+                for (var i = 1; i < 4; i++) {
+                    list.push('/DATANFT/' + i);
+                }
+                arController.loadNFTMarkers(list, function (markerIds) {
+                    log('NFT Marker Count', markerIds.length);
+                });
+
+                var tick = function () {
+                    arController.process();
+                    requestAnimationFrame(tick);
+                };
+
+                tick();
+            };
+        }
+        function log(type, code) {
+            var message = type + ": " + code;
+            console.log(message);
+            document.getElementById('message').innerText = message;
+        }
+
+        //////
+        var clock = new THREE.Clock();
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 10000);
+        camera.position.set(0, 0, 25);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        var light1 = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(light1);
+        var light2 = new THREE.DirectionalLight(0xffffff, 0.8 * Math.PI);
+        light2.position.set(0, 10, 0);
+        scene.add(light2);
+        var context = canvas.getContext('webgl2');
+        var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        renderer.setClearColor(0x000000, 0);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.gammaOutput = true;
+        renderer.gammaFactor = 2.2;
+        renderer.physicallyCorrectLights = true;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(canvas.width, canvas.height);
+
+        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+        function onWindowResize() {
+            camera.aspect = canvas.width / canvas.height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvas.width, canvas.height);
+        }
+
+        function loadSence(gltfScene) {
+            gltfScene.updateMatrixWorld();
+            const box = new THREE.Box3().setFromObject(gltfScene);
+            const size = box.getSize(new THREE.Vector3()).length();
+            const center = box.getCenter(new THREE.Vector3());
+            gltfScene.visible = false;
+            gltfScene.position.x += (gltfScene.position.x - center.x);
+            gltfScene.position.y += (gltfScene.position.y - center.y);
+            gltfScene.position.z += (gltfScene.position.z - center.z);
+            controls.maxDistance = size * 10;
+            camera.near = size / 100;
+            camera.far = size * 100;
+            camera.updateProjectionMatrix();
+            camera.position.copy(center);
+            camera.position.x += size / 2.0;
+            camera.position.y += size / 5.0;
+            camera.position.z += size / 2.0;
+            camera.lookAt(center);
+
+            scene.add(gltfScene);
+            //
+            var modelBox3 = box;
+            var meshBox3 = new THREE.Box3();
+            modelBox3.expandByObject(gltfScene);
+            var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
+            gltfScene.traverse(function (value) {
+
+                if (value.isMesh) {
+                    value.castShadow = true;
+                    value.receiveShadow = true;
+                    meshBox3.setFromObject(value);
+                    var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
+                    if (isNaN(worldPs.x)) return;
+                    value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
+                    value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
+                }
+            });
+            function applyScalar(scalar) {
+                gltfScene.traverse(function (value) {
+                    if (!value.isMesh || !value.worldDir) return;
+                    value.position.copy(new THREE.Vector3().copy(value.userData.oldPs).add(new THREE.Vector3().copy(value.worldDir).multiplyScalar(scalar)))
+                });
+            }
+            document.querySelector("#scalar").addEventListener('input', function (evt) {
+                applyScalar(this.value * 1)
+            })
+            //
+
+            onWindowResize();
+            var animations = model.animations || [];
+            if (animations && animations.length) {
+                mixer = new THREE.AnimationMixer(gltfScene);
+                for (var i = 0; i < animations.length; i++) {
+                    var animation = animations[i];
+                    animation.optimize();
+                    var action = mixer.clipAction(animation);
+                    actions.push(action);
+                    var id = 'toggle' + i;
+                    var li = '<span class="">' + animation.name + '</span>';
+                    li += '<label id="' + id + '" class="toggle toggle-init">';
+                    li += '<input type="checkbox" data-index=' + i + '>'
+                    li += '<span class="toggle-icon"></span>';
+                    li += '</label>';
+                    var tag = document.createElement('li');
+                    tag.innerHTML = li;
+                    document.getElementById('animationblock').append(tag);
+                }
+                $('#animationblock').on('change', 'input', function () {
+                    var i = $(this).attr('data-index');
+                    if ($(this).is(':checked')) {
+                        actions[i].play();
+                    }
+                    else {
+                        actions[i].stop();
+                    }
+                });
+            }
+        }
+
+        var file = '/demo/test.glb';
+        var loader = new THREE.GLTFLoader();
+        var mixer;
+        var actions = new Array();
+        var model;
+        var modelScene;
+        function load2() {
+            loader.load(file, function (object) {
+                model = object;
+                var scene;
+                if (file.endsWith("glb") || file.endsWith("gltf")) {
+                    scene = object.scene || object.scenes[0];
+                }
+                else {
+                    scene = object
+                }
+                modelScene = scene;
+                modelScene.matrixAutoUpdate = false;
+                loadSence(modelScene);
+            });
+
+            var animate = function () {
+                requestAnimationFrame(animate);
+                if (mixer) mixer.update(clock.getDelta());
+                controls.update();
+                renderer.render(scene, camera);
+            };
+            animate();
+        }
+        //////
+        var model;
+        function getModel(number) {
+            return modelScene;
+        }
+        function getMarker(ev) {
+            var markerType = ev.data.type;
+            var currentMarkerId;
+            if (markerType === artoolkit.PATTERN_MARKER) {
+                currentMarkerId = ev.data.marker.idPatt;
+                log("Pattern", markerId);
+            } else if (markerType === artoolkit.BARCODE_MARKER) {
+                currentMarkerId = ev.data.marker.idMatrix;
+                log("Barcode", ev.data.marker.idMatrix);
+            }
+            else if (markerType == artoolkit.NFT_MARKER) {
+                currentMarkerId = ev.data.marker.id;
+                log("NFT", ev.data.marker.id);
+            }
+            var lost = false;
+
+            if (ev.data.type > 0) {
+                var currentMarkerNumber = currentMarkerId * 10000000 + currentMarkerId;
+                console.log('Marker:' + currentMarkerNumber);
+                if (!markerNumber) {
+                    var model = getModel(currentMarkerNumber);
+                    if (model) {
+                        markerNumber = currentMarkerNumber;
+                        model.visible = true;
+                        setProjectionMatrix(modelScene.matrix, ev.data.matrixGL_RH);
+                    }
+                }
+                else {
+                    if (currentMarkerNumber === markerNumber) {
+                        var model = getModel(currentMarkerNumber);
+                        if (model) {
+                            setProjectionMatrix(modelScene.matrix, ev.data.matrixGL_RH);
+                        }
+                        //var model = getModel(currentMarkerNumber);
+                    }
+                    else {
+                        //var model = getModel(markerNumber);
+                        //model.destory()
+                        //var model = getModel(currentMarkerNumber);
+                        //model.positon = ev.xx
+                        markerNumber = currentMarkerNumber;
+                        var model = getModel(currentMarkerNumber);
+                        model.visible = false;
+                        var model = getModel(currentMarkerNumber);
+                        model.visible = true;
+                    }
+                }
+
+            }
+            else {//lost marker
+                if (markerNumber) {
+                    var model = getModel(markerNumber);
+                    if (model) {
+                        markerNumber = null;
+                        //model.destory()
+                        model.visible = false;
+                    }
+                }
+            }
+        }
+
+        function setProjectionMatrix(projectionMatrix, value) {
+            if (typeof projectionMatrix.elements.set === "function") {
+                projectionMatrix.elements.set(value);
+            } else {
+                projectionMatrix.elements = [].slice.call(value);
+            }
+        };
+    </script>
+    <script>
+        var width;
+        var height;
+        var canvas = document.getElementById('canvas');
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+        var hdConstraints = {
+            audio: false,
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+            }
+        };
+
+        if (isMobile()) {
+            hdConstraints.video.facingMode = { "exact": "environment" };
+        }
+        else {
+            document.body.className = "desktop";
+        }
+
+        if (navigator.getUserMedia) {
+            navigator.getUserMedia(hdConstraints, success, errorCallback);
+        } else {
+            errorCallback('');
+        }
+    </script>
+</body>
+
+</html>
