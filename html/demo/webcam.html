@@ -8,35 +8,26 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #000;
+            background-color: #fff;
         }
 
         .app {
+            width: 100vw;
+            height: 100vh;
             text-align: center;
+            overflow: hidden;
         }
 
         video {
-            z-index: 0;
-            height: 100%;
-            max-width: 100%;
-            position: absolute;
-            left: -9999px;
-            right: -9999px;
-            margin: 0 auto;
+            height: 100% !important;
+            width: 100% !important;
+            display: block;
         }
 
-
-        #message {
-            font-size: 1.5em;
-            font-weight: bold;
-            padding: 1em;
-            background: #fff;
+        canvas {
+            display: block;
             position: absolute;
-            width: 100%;
-            height: 5em;
-            top: 5em;
-            opacity: .5;
-            color: red;
+            top: 0;
         }
     </style>
 </head>
@@ -44,13 +35,27 @@
 <body>
     <div class="app">
         <video id="video" playsInline muted autoplay></video>
+        <canvas id="canvas"></canvas>
     </div>
     <script>
+        //var video = document.getElementById('video');
+        var canvas = document.getElementById('canvas');
         function success(stream) {
             video.srcObject = stream;
             video.onloadedmetadata = function (e) {
                 video.width = e.srcElement.videoWidth;
-                video.height = e.srcElement.videoHeight
+                video.height = e.srcElement.videoHeight;
+                // var aspectWindow = window.innerWidth/window.innerHeight;
+                // var aspcet=video.width/video.height;
+                // if(aspectWindow-aspcet>0)
+                // {
+                //     canvas.height=window.height;
+                //     canvas.width=video.width/video.height*Window.height;
+                // }
+                // else{
+                //     canvas.width=window.width;
+                //     canvas.height=video.width/video.height*Window.width;
+                // }
             };
             video.play();
         }
@@ -61,11 +66,6 @@
 
         function isMobile() {
             return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
-        }
-    </script>
-    <script>
-        window.onorientationchange = function () {
-
         }
     </script>
     <script>
