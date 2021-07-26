@@ -18,32 +18,41 @@
 
 <body>
     <canvas id="canvas" width="640" height="480"></canvas>
-    <script src="/examples/js/third_party/three.js/three.min.js"></script>
+    <script src="/demo/three.js/three.min.js"></script>
     <script>
-        var canvas = document.getElementById('canvas');
-        var scene = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 1000);
-        var renderer = new THREE.WebGLRenderer({ canvas: canvas });
-        renderer.setSize(canvas.width, canvas.height);
-        //document.body.appendChild(renderer.domElement);
+        let camera, scene, renderer;
+        let geometry, material, mesh;
 
-        var geometry = new THREE.BoxGeometry(1, 1, 1);
-        var material = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
-        var cube = new THREE.Mesh(geometry, material);
-        scene.add(cube);
+        init();
 
-        camera.position.z = 5;
+        function init() {
 
-        var animate = function () {
-            requestAnimationFrame(animate);
+            camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
+            camera.position.z = 1;
 
-            cube.rotation.x += 0.01;
-            cube.rotation.y += 0.01;
+            scene = new THREE.Scene();
+
+            geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
+            material = new THREE.MeshNormalMaterial();
+
+            mesh = new THREE.Mesh(geometry, material);
+            scene.add(mesh);
+
+            renderer = new THREE.WebGLRenderer({ antialias: true, canvas: canvas });
+            renderer.setSize(window.innerWidth, window.innerHeight);
+            renderer.setAnimationLoop(animation);
+            document.body.appendChild(renderer.domElement);
+
+        }
+
+        function animation(time) {
+
+            mesh.rotation.x = time / 2000;
+            mesh.rotation.y = time / 1000;
 
             renderer.render(scene, camera);
-        };
 
-        animate();
+        }
     </script>
 </body>
 

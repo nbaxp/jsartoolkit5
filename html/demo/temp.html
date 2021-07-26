@@ -55,16 +55,8 @@
     </script>
     <script>
         var scene = new THREE.Scene();
-
-        var geometry = new THREE.BoxGeometry(1, 1, 1);
-        for (let i = 0; i < geometry.faces.length; i++) {
-            let hex = Math.random() * 0xffffff;
-            geometry.faces[i].color.setHex(hex);
-        }
-
-        var material = new THREE.MeshBasicMaterial({
-            vertexColors: THREE.FaceColors
-        });
+        geometry = new THREE.BoxGeometry(1, 1, 1);
+        material = new THREE.MeshNormalMaterial();
 
         var cube = new THREE.Mesh(geometry, material);
         cube.matrixAutoUpdate = false;
@@ -136,8 +128,6 @@
                     arController.process();
                     if (renderer) {
                         renderer.render(scene, camera);
-                        // cube.rotation.x += 0.01;
-                        // cube.rotation.y += 0.01;
                         rotationV += (rotationTarget - cube.rotation.z) * 0.05;
                         cube.rotation.z += rotationV;
                         rotationV *= 0.8;

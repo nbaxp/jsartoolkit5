@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta charset="utf-8">
+    <title>My first three.js app</title>
+    <style>
+        body {
+            margin: 0;
+        }
+
+        canvas {
+            width: 100%;
+            height: 100%
+        }
+    </style>
+</head>
+
+<body>
+    <canvas id="canvas" width="640" height="480"></canvas>
+    <div class="page-content">
+        <label>scalar:<input id="scalar" type="range" min="-10" max="10" value="0" /></label>
+        <div class="block-title">animation</div>
+        <div class="list simple-list" id="animationblock">
+            <ul></ul>
+        </div>
+    </div>
+    <script src="/demo/jquery.min.js"></script>
+    <script src="/demo/three.js/three.min.js"></script>
+    <script src="/demo/three.js/js/controls/OrbitControls.js"></script>
+    <script src="/demo/three.js/js/loaders/GLTFLoader.js"></script>
+    <script>
+        var canvas = document.getElementById('canvas');
+        var clock = new THREE.Clock();
+        var scene = new THREE.Scene();
+        var camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 10000);
+        camera.position.set(0, 0, 25);
+        camera.lookAt(new THREE.Vector3(0, 0, 0));
+        var light1 = new THREE.AmbientLight(0xffffff, 0.3);
+        scene.add(light1);
+        var light2 = new THREE.DirectionalLight(0xffffff, 0.8 * Math.PI);
+        light2.position.set(0, 10, 0);
+        scene.add(light2);
+        var context = canvas.getContext('webgl2');
+        var renderer = new THREE.WebGLRenderer({ canvas: canvas, context: context, antialias: true });
+        renderer.setClearColor(0xcccccc);
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.gammaOutput = true;
+        renderer.gammaFactor = 2.2;
+        renderer.physicallyCorrectLights = true;
+        renderer.setPixelRatio(window.devicePixelRatio);
+        renderer.setSize(canvas.width, canvas.height);
+
+        var controls = new THREE.OrbitControls(camera, renderer.domElement);
+        function onWindowResize() {
+            camera.aspect = canvas.width / canvas.height;
+            camera.updateProjectionMatrix();
+            renderer.setSize(canvas.width, canvas.height);
+        }
+
+        function loadSence(gltfScene) {
+            gltfScene.updateMatrixWorld();
+            const box = new THREE.Box3().setFromObject(gltfScene);
+            const size = box.getSize(new THREE.Vector3()).length();
+            const center = box.getCenter(new THREE.Vector3());
+            gltfScene.position.x += (gltfScene.position.x - center.x);
+            gltfScene.position.y += (gltfScene.position.y - center.y);
+            gltfScene.position.z += (gltfScene.position.z - center.z);
+            controls.maxDistance = size * 10;
+            camera.near = size / 100;
+            camera.far = size * 100;
+            camera.updateProjectionMatrix();
+            camera.position.copy(center);
+            camera.position.x += size / 2.0;
+            camera.position.y += size / 5.0;
+            camera.position.z += size / 2.0;
+            camera.lookAt(center);
+
+            scene.add(gltfScene);
+            //
+            var modelBox3 = box;
+            var meshBox3 = new THREE.Box3();
+            modelBox3.expandByObject(gltfScene);
+            var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
+            gltfScene.traverse(function (value) {
+
+                if (value.isMesh) {
+                    value.castShadow = true;
+                    value.receiveShadow = true;
+                    meshBox3.setFromObject(value);
+                    var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
+                    if (isNaN(worldPs.x)) return;
+                    value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
+                    value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
+                }
+            });
+            function applyScalar(scalar) {
+                gltfScene.traverse(function (value) {
+                    if (!value.isMesh || !value.worldDir) return;
+                    value.position.copy(new THREE.Vector3().copy(value.userData.oldPs).add(new THREE.Vector3().copy(value.worldDir).multiplyScalar(scalar)))
+                });
+            }
+            document.querySelector("#scalar").addEventListener('input', function (evt) {
+                applyScalar(this.value * 1)
+            })
+            //
+
+            onWindowResize();
+            var animations = model.animations || [];
+            if (animations && animations.length) {
+                mixer = new THREE.AnimationMixer(gltfScene);
+                for (var i = 0; i < animations.length; i++) {
+                    var animation = animations[i];
+                    animation.optimize();
+                    var action = mixer.clipAction(animation);
+                    actions.push(action);
+                    var id = 'toggle' + i;
+                    var li = '<span class="">' + animation.name + '</span>';
+                    li += '<label id="' + id + '" class="toggle toggle-init">';
+                    li += '<input type="checkbox" data-index='+i+'>'
+                    li += '<span class="toggle-icon"></span>';
+                    li += '</label>';
+                    var tag = document.createElement('li');
+                    tag.innerHTML = li;
+                    document.getElementById('animationblock').append(tag);
+                }
+                $('#animationblock').on('change', 'input', function () {
+                    var i = $(this).attr('data-index');
+                    if ($(this).is) {
+
+                    }
+                    if ($(this).is(':checked')) {
+                        actions[i].play();
+                    }
+                    else {
+                        actions[i].stop();
+                    }
+                });
+            }
+        }
+
+        var file = '/demo/test.glb';
+        var loader = new THREE.GLTFLoader();
+        var mixer;
+        var actions = new Array();
+        var model;
+
+        loader.load(file, function (object) {
+            model = object;
+            var scene;
+            if (file.endsWith("glb") || file.endsWith("gltf")) {
+                scene = object.scene || object.scenes[0];
+            }
+            else {
+                scene = object
+            }
+            loadSence(scene);
+        });
+
+        var animate = function () {
+            requestAnimationFrame(animate);
+            if (mixer) mixer.update(clock.getDelta());
+            controls.update();
+            renderer.render(scene, camera);
+        };
+        animate();
+    </script>
+</body>
+
+</html>
