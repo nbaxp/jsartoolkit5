@@ -16,13 +16,15 @@
         }
 
         video {
-            position: relative;
-            height: 100vh;
-            width: auto;
-            text-align: center;
-            justify-content: center;
-            object-fit: cover;
+            z-index: 0;
+            height: 100%;
+            max-width: 100%;
+            position: absolute;
+            left: -9999px;
+            right: -9999px;
+            margin: 0 auto;
         }
+
 
         #message {
             font-size: 1.5em;
