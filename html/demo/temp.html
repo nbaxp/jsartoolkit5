@@ -6,38 +6,26 @@
     <title>temp</title>
     <style>
         body {
-            position: fixed;
-            height: 100%;
-            width: 100%;
             margin: 0;
             padding: 0;
-            overflow-y: hidden;
-            background-color: #000;
+            width: 100vw;
+            height: 100vh;
+            text-align: center;
+            overflow: hidden;
+            background-color: black;
         }
 
         video {
-            z-index: 0;
-            height: 100%;
-            width: 100%;
-            max-width: 100%;
-            position: absolute;
-            left: -9999px;
-            right: -9999px;
-            margin: 0 auto;
+            height: 100% !important;
+            width: 100% !important;
         }
 
-
         canvas {
-            z-index: 1000;
-            height: 100%!important;
-            width: 100%!important;
-            max-width: 100%;
+            width: 0;
+            height: 0;
             position: absolute;
-            left: -9999px;
-            right: -9999px;
-            margin: 0 auto;
-            background-color: red;
-            opacity: .5;
+            top: 0;
+            left: 0;
         }
 
         #message {
@@ -87,18 +75,48 @@
         var video = document.getElementById('video');
         var canvas = document.getElementById('canvas');
         function resize() {
-            // if (window.innerWidth / window.innerHeight > video.width / video.height) {
-            //     canvas.style.height = window.innerHeight + 'px';
-            //     canvas.style.width = video.width / video.height * window.innerHeight + 'px';
-            //     canvas.style.top = 0;
-            //     canvas.style.left = (window.innerWidth - canvas.clientWidth) / 2 + 'px';
-            // }
-            // else {
-            //     canvas.style.width = window.innerWidth + 'px';
-            //     canvas.style.height = window.innerWidth * video.height / video.width + 'px';
-            //     canvas.style.top = (window.innerHeight - canvas.clientHeight) / 2 + 'px';
-            //     canvas.style.left = 0;
-            // }
+            var screenWidth = document.documentElement.clientWidth;
+            var screenHeight = document.documentElement.clientHeight;
+            var videoWidth = video.width;
+            var videoHeight = video.height;
+            var message = isMobile() ? "m#" : 'd#';
+            message += window.orientation + '>';
+            if (!isMobile()) {
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {
+                    canvas.style.width = videoWidth / videoHeight * screenHeight + 'px';
+                }
+                else {
+                    canvas.style.height = videoHeight / videoWidth * screenWidth + 'px';
+                }
+            }
+            else {
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {//进入横屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.style.width = videoWidth / videoHeight * screenHeight + 'px';
+                    }
+                    else {//竖屏开始
+                        canvas.style.width = videoHeight / videoWidth * screenHeight + 'px';
+                    }
+                }
+                else {//进入竖屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.style.height = videoWidth / videoHeight * screenWidth + 'px';
+                    }
+                    else {//竖屏开始
+                        canvas.style.height = videoHeight / videoWidth * screenWidth + 'px';
+                    }
+                }
+            }
+            if (screenWidth / screenHeight > videoWidth / videoHeight) {
+                canvas.style.height = screenHeight + 'px';
+                canvas.style.top = 0;
+                canvas.style.left = (screenWidth - canvas.clientWidth) / 2 + 'px';
+            }
+            else {
+                canvas.style.width = screenWidth + 'px';
+                canvas.style.top = (screenHeight - canvas.clientHeight) / 2 + 'px';
+                canvas.style.left = 0;
+            }
         }
 
         function success(stream) {
@@ -115,12 +133,33 @@
                 setTimeout(() => {
                     load();
                 }, 0);
-                setTimeout(() => {
-                    load2();
-                }, 0);
             };
             video.play();
         }
+        function orientationChange() {
+            //arController.orientation=video.videoWidth > video.videoHeight?'landscape': 'portrait';
+            // if (video.videoWidth > video.videoHeight) {
+            //     arController.orientation = 'landscape';
+            //     arController.videoWidth = video.videoWidth;
+            //     arController.videoHeight = video.videoHeight;
+            //     renderer.setSize(canvas.width, canvas.height);
+            // } else {
+            //     arController.orientation = 'portrait';
+            //     arController.videoWidth = video.videoHeight;
+            //     arController.videoHeight = video.videoWidth;
+            //     renderer.setSize(canvas.height, canvas.width);
+            // }
+            // if (arController.orientation === 'portrait') {
+            //     renderer.setSize(canvas.height, canvas.width);
+            //     renderer.domElement.style.transformOrigin = '0 0';
+            //     renderer.domElement.style.transform = 'rotate(-90deg) translateX(-100%)';
+            // } else {
+            //     renderer.setSize(canvas.width, canvas.height);
+            // }
+            //renderer.setSize(canvas.width, canvas.height);
+            //alert(arController.orientation + ' ' + window.orientation);
+        }
+        var arController;
         function load() {
             codeReader = new ZXingBrowser.BrowserMultiFormatReader();
             codeReader.decodeFromVideoElement(document.querySelector('#video'), (result, error, controls) => {
@@ -133,9 +172,13 @@
             var profile = '/examples/Data/camera_para.dat';
             var cameraParam = new ARCameraParam(profile);
             cameraParam.onload = function () {
-                var arController = new ARController(video, cameraParam);
+                arController = new ARController(video, cameraParam);
+
                 window.onorientationchange = function (e) {
+                    orientationChange();
                 }
+
+                orientationChange();
 
                 arController.addEventListener('getMarker', function (ev) {
                     getMarker(ev);
@@ -160,6 +203,8 @@
                     log('NFT Marker Count', markerIds.length);
                 });
 
+                load2();
+
                 var tick = function () {
                     arController.process();
                     requestAnimationFrame(tick);
@@ -174,32 +219,11 @@
             document.getElementById('message').innerText = message;
         }
 
-        //////
-        var clock = new THREE.Clock();
-        var scene = new THREE.Scene();
-        var camera = new THREE.PerspectiveCamera(75, canvas.width / canvas.height, 0.1, 10000);
-        camera.position.set(0, 0, 25);
-        camera.lookAt(new THREE.Vector3(0, 0, 0));
-        var light1 = new THREE.AmbientLight(0xffffff, 0.3);
-        scene.add(light1);
-        var light2 = new THREE.DirectionalLight(0xffffff, 0.8 * Math.PI);
-        light2.position.set(0, 10, 0);
-        scene.add(light2);
-        var context = canvas.getContext('webgl2');
-        var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-        renderer.setClearColor(0x000000, 0);
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.gammaOutput = true;
-        renderer.gammaFactor = 2.2;
-        renderer.physicallyCorrectLights = true;
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(canvas.width, canvas.height);
-
-        var controls = new THREE.OrbitControls(camera, renderer.domElement);
         function onWindowResize() {
             camera.aspect = canvas.width / canvas.height;
             camera.updateProjectionMatrix();
             renderer.setSize(canvas.width, canvas.height);
+            resize();
         }
 
         function loadSence(gltfScene) {
@@ -239,6 +263,7 @@
                     value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
                 }
             });
+
             function applyScalar(scalar) {
                 gltfScene.traverse(function (value) {
                     if (!value.isMesh || !value.worldDir) return;
@@ -285,11 +310,35 @@
         // var loader = new THREE.GLTFLoader();
         var file = '/demo/test.fbx';
         var loader = new THREE.FBXLoader();
+        var clock = new THREE.Clock();
+        var scene = new THREE.Scene();
+        var camera;
+        var renderer;
+        var controls;
         var mixer;
         var actions = new Array();
         var model;
         var modelScene;
         function load2() {
+            camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 1, 1000);
+            camera.position.set(0, 0, 400);
+            camera.lookAt(new THREE.Vector3(0, 0, 0));
+            var light1 = new THREE.AmbientLight(0xffffff, 0.3);
+            scene.add(light1);
+            var light2 = new THREE.DirectionalLight(0xffffff, 0.8 * Math.PI);
+            light2.position.set(0, 10, 0);
+            scene.add(light2);
+            var context = canvas.getContext('webgl2');
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setClearColor(0x000000, 0);
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.gammaOutput = true;
+            renderer.gammaFactor = 2.2;
+            renderer.physicallyCorrectLights = true;
+            renderer.setPixelRatio(window.devicePixelRatio);
+            renderer.setSize(canvas.width, canvas.height);
+            resize();
+            controls = new THREE.OrbitControls(camera, renderer.domElement);
             loader.load(file, function (object) {
                 model = object;
                 var scene;
