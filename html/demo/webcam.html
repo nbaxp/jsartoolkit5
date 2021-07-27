@@ -8,14 +8,10 @@
         body {
             margin: 0;
             padding: 0;
-            background-color: #fff;
-            overflow: hidden;
-        }
-
-        .app {
             width: 100vw;
             height: 100vh;
             text-align: center;
+            overflow: hidden;
         }
 
         video {
@@ -37,26 +33,77 @@
 </head>
 
 <body>
-    <div class="app">
-        <video id="video" playsInline muted autoplay></video>
-        <canvas id="canvas"></canvas>
-    </div>
+    <video id="video" playsInline muted autoplay></video>
+    <canvas id="canvas"></canvas>
     <script>
         var video = document.getElementById('video');
         var canvas = document.getElementById('canvas');
         function resize() {
-            if (window.innerWidth / window.innerHeight > video.width / video.height) {
-                canvas.style.height = window.innerHeight + 'px';
-                canvas.style.width = video.width / video.height * window.innerHeight + 'px';
-                canvas.style.top = 0;
-                canvas.style.left = (window.innerWidth - canvas.clientWidth) / 2 + 'px';
+
+            //alert(window.orientation + ":" + document.documentElement.clientWidth + ":" + document.documentElement.clientHeight + "#" + video.width + ":" + video.height);
+            var screenWidth = document.documentElement.clientWidth;
+            var screenHeight = document.documentElement.clientHeight;
+            // var videoWidth = video.width > video.height ? video.width : video.height;
+            // var videoHeight = video.width > video.height ? video.height : video.width;
+            var videoWidth = video.width;
+            var videoHeight = video.height;
+            var message = isMobile() ? "mobile" : 'desktop';
+            message += window.orientation;
+            if (!isMobile()) {
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {
+                    canvas.style.height = screenHeight + 'px';
+                    canvas.style.width = videoWidth / videoHeight * screenHeight + 'px';
+                    canvas.style.top = 0;
+                    canvas.style.left = (screenWidth - canvas.clientWidth) / 2 + 'px';
+                }
+                else {
+                    canvas.style.width = screenWidth + 'px';
+                    canvas.style.height = screenWidth * videoHeight / videoWidth + 'px';
+                    canvas.style.top = (screenHeight - canvas.clientHeight) / 2 + 'px';
+                    canvas.style.left = 0;
+                }
             }
             else {
-                canvas.style.width = window.innerWidth + 'px';
-                canvas.style.height = window.innerWidth * video.height / video.width + 'px';
-                canvas.style.top = (window.innerHeight - canvas.clientHeight) / 2 + 'px';
-                canvas.style.left = 0;
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {//进入横屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.style.height = screenHeight + 'px';
+                        canvas.style.width = videoWidth / videoHeight * screenHeight + 'px';
+                        canvas.style.top = 0;
+                        canvas.style.left = (screenWidth - canvas.clientWidth) / 2 + 'px';
+                        message = '横屏开始';
+                    }
+                    else {//竖屏开始
+                        canvas.style.height = screenHeight + 'px';
+                        //canvas.style.width = videoWidth / videoHeight * screenHeight + 'px';
+                        canvas.style.width = videoHeight * screenHeight / videoWidth + 'px';
+                        canvas.style.top = 0;
+                        canvas.style.left = (screenWidth - canvas.clientWidth) / 2 + 'px';
+                        message = '竖屏开始，进入横屏';
+                    }
+                }
+                else {//进入竖屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.style.width = screenWidth + 'px';
+                        canvas.style.height = screenWidth * videoWidth / videoHeight + 'px';
+                        canvas.style.top = (screenHeight - canvas.clientHeight) / 2 + 'px';
+                        canvas.style.left = 0;
+                        message = '横屏开始，进入竖屏';
+                    }
+                    else {//竖屏开始
+                        canvas.style.width = screenWidth + 'px';
+                        canvas.style.height = screenWidth * videoHeight / videoWidth + 'px';
+                        canvas.style.top = (screenHeight - canvas.clientHeight) / 2 + 'px';
+                        canvas.style.left = 0;
+                        message = '竖屏开始';
+                    }
+                }
             }
+
+            message += window.orientation
+            message += '#screen:' + screenWidth + "x" + screenHeight;
+            message += "#video" + videoWidth + "x" + videoHeight;
+            message += '#canvas' + canvas.style.width + 'x' + canvas.style.height;
+            alert(message);
         }
         function success(stream) {
             video.srcObject = stream;

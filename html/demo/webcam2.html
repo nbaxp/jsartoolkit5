@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.5, maximum-scale=1">
+    <title>webcam</title>
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background-color: #fff;
+            overflow: hidden;
+        }
+
+        .app {
+            width: 100vw;
+            height: 100vh;
+            background-color: black;
+        }
+
+        video {
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: green;
+        }
+
+        canvas {
+            width: 0;
+            height: 0;
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: red;
+            opacity: .5;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="app">
+        <video id="video" playsInline muted autoplay></video>
+        <canvas id="canvas"></canvas>
+    </div>
+    <script>
+        var video = document.getElementById('video');
+        var canvas = document.getElementById('canvas');
+        function resize() {
+            if (window.innerWidth / window.innerHeight > video.width / video.height) {
+                canvas.style.height = window.innerHeight + 'px';
+                canvas.style.width = video.width / video.height * window.innerHeight + 'px';
+                canvas.style.top = 0;
+                canvas.style.left = (window.innerWidth - canvas.clientWidth) / 2 + 'px';
+            }
+            else {
+                canvas.style.width = window.innerWidth + 'px';
+                canvas.style.height = window.innerWidth * video.height / video.width + 'px';
+                canvas.style.top = (window.innerHeight - canvas.clientHeight) / 2 + 'px';
+                canvas.style.left = 0;
+            }
+            video.style.width = canvas.style.width;
+            video.style.height = canvas.style.height;
+            video.style.top = canvas.style.top;
+            video.style.left = canvas.style.left;
+        }
+        function success(stream) {
+            video.srcObject = stream;
+            video.onloadedmetadata = function (e) {
+                video.width = e.srcElement.videoWidth;
+                video.height = e.srcElement.videoHeight;
+                canvas.width = video.width;
+                canvas.height = video.height;
+                window.onresize = function (e) {
+                    resize();
+                };
+                window.orientationchange=function(e)
+                {
+                    resize();
+                };
+                resize();
+            };
+            video.play();
+        }
+
+        function errorCallback(e) {
+            console.log("Can't access user media", e);
+        }
+
+        function isMobile() {
+            return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
+        }
+    </script>
+    <script>
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+
+        var hdConstraints = {
+            audio: false,
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+            }
+        };
+
+        if (isMobile()) {
+            hdConstraints.video.facingMode = { "exact": "environment" };
+        }
+        else {
+            document.body.className = "desktop";
+        }
+
+        if (navigator.getUserMedia) {
+            navigator.getUserMedia(hdConstraints, success, errorCallback);
+        } else {
+            errorCallback('');
+        }
+    </script>
+
+</body>
+
+</html>

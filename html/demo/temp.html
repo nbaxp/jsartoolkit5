@@ -6,31 +6,38 @@
     <title>temp</title>
     <style>
         body {
+            position: fixed;
+            height: 100%;
+            width: 100%;
             margin: 0;
             padding: 0;
-            background-color: #fff;
-            overflow: hidden;
-        }
-
-        .app {
-            width: 100vw;
-            height: 100vh;
-            text-align: center;
+            overflow-y: hidden;
+            background-color: #000;
         }
 
         video {
-            height: 100% !important;
-            width: 100% !important;
-            display: block;
+            z-index: 0;
+            height: 100%;
+            width: 100%;
+            max-width: 100%;
+            position: absolute;
+            left: -9999px;
+            right: -9999px;
+            margin: 0 auto;
         }
 
+
         canvas {
-            display: block;
+            z-index: 1000;
+            height: 100%!important;
+            width: 100%!important;
+            max-width: 100%;
             position: absolute;
-            top: 0;
-            left: 0;
-            width: 0;
-            height: 0;
+            left: -9999px;
+            right: -9999px;
+            margin: 0 auto;
+            background-color: red;
+            opacity: .5;
         }
 
         #message {
@@ -49,12 +56,9 @@
 </head>
 
 <body>
-    <div class="app">
-        <video id="video" playsInline muted autoplay></video>
-        <canvas id="canvas"></canvas>
-        <div id="message">loading...</div>
-    </div>
-
+    <video id="video" playsInline muted autoplay></video>
+    <canvas id="canvas"></canvas>
+    <div id="message">loading...</div>
     <div class="page-content" style="display: none;">
         <label>scalar:<input id="scalar" type="range" min="-10" max="10" value="0" /></label>
         <div class="block-title">animation</div>
@@ -83,18 +87,18 @@
         var video = document.getElementById('video');
         var canvas = document.getElementById('canvas');
         function resize() {
-            if (window.innerWidth / window.innerHeight > video.width / video.height) {
-                canvas.style.height = window.innerHeight + 'px';
-                canvas.style.width = video.width / video.height * window.innerHeight + 'px';
-                canvas.style.top = 0;
-                canvas.style.left = (window.innerWidth - canvas.clientWidth) / 2 + 'px';
-            }
-            else {
-                canvas.style.width = window.innerWidth + 'px';
-                canvas.style.height = window.innerWidth * video.height / video.width + 'px';
-                canvas.style.top = (window.innerHeight - canvas.clientHeight) / 2 + 'px';
-                canvas.style.left = 0;
-            }
+            // if (window.innerWidth / window.innerHeight > video.width / video.height) {
+            //     canvas.style.height = window.innerHeight + 'px';
+            //     canvas.style.width = video.width / video.height * window.innerHeight + 'px';
+            //     canvas.style.top = 0;
+            //     canvas.style.left = (window.innerWidth - canvas.clientWidth) / 2 + 'px';
+            // }
+            // else {
+            //     canvas.style.width = window.innerWidth + 'px';
+            //     canvas.style.height = window.innerWidth * video.height / video.width + 'px';
+            //     canvas.style.top = (window.innerHeight - canvas.clientHeight) / 2 + 'px';
+            //     canvas.style.left = 0;
+            // }
         }
 
         function success(stream) {
