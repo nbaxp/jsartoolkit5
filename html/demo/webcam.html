@@ -9,25 +9,29 @@
             margin: 0;
             padding: 0;
             background-color: #fff;
+            overflow: hidden;
         }
 
         .app {
             width: 100vw;
             height: 100vh;
             text-align: center;
-            overflow: hidden;
         }
 
         video {
             height: 100% !important;
             width: 100% !important;
-            display: block;
+            background-color: green;
         }
 
         canvas {
-            display: block;
+            width: 0;
+            height: 0;
             position: absolute;
             top: 0;
+            left: 0;
+            background-color: red;
+            opacity: .5;
         }
     </style>
 </head>
@@ -38,24 +42,33 @@
         <canvas id="canvas"></canvas>
     </div>
     <script>
-        //var video = document.getElementById('video');
+        var video = document.getElementById('video');
         var canvas = document.getElementById('canvas');
+        function resize() {
+            if (window.innerWidth / window.innerHeight > video.width / video.height) {
+                canvas.style.height = window.innerHeight + 'px';
+                canvas.style.width = video.width / video.height * window.innerHeight + 'px';
+                canvas.style.top = 0;
+                canvas.style.left = (window.innerWidth - canvas.clientWidth) / 2 + 'px';
+            }
+            else {
+                canvas.style.width = window.innerWidth + 'px';
+                canvas.style.height = window.innerWidth * video.height / video.width + 'px';
+                canvas.style.top = (window.innerHeight - canvas.clientHeight) / 2 + 'px';
+                canvas.style.left = 0;
+            }
+        }
         function success(stream) {
             video.srcObject = stream;
             video.onloadedmetadata = function (e) {
                 video.width = e.srcElement.videoWidth;
                 video.height = e.srcElement.videoHeight;
-                // var aspectWindow = window.innerWidth/window.innerHeight;
-                // var aspcet=video.width/video.height;
-                // if(aspectWindow-aspcet>0)
-                // {
-                //     canvas.height=window.height;
-                //     canvas.width=video.width/video.height*Window.height;
-                // }
-                // else{
-                //     canvas.width=window.width;
-                //     canvas.height=video.width/video.height*Window.width;
-                // }
+                canvas.width = video.width;
+                canvas.height = video.height;
+                window.onresize = function (e) {
+                    resize();
+                };
+                resize();
             };
             video.play();
         }
