@@ -2,9 +2,28 @@
 <html>
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.5, maximum-scale=1">
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
     <link rel="stylesheet" href="style.css">
     <title>temp</title>
+    <style>
+        html,
+        body {
+            margin: 0;
+            padding: 0;
+            width: 100%;
+            text-align: center;
+            overflow-x: hidden;
+        }
+
+        /* .portrait canvas {
+            transform-origin: 0 0;
+            transform: rotate(-90deg) translateX(-100%);
+        } */
+
+        /* .desktop canvas {
+            transform: scale(-1, 1);
+        } */
+    </style>
 </head>
 
 <body>
@@ -39,19 +58,16 @@
     </script>
     <script src="temp.js"></script>
     <script>
-        function orientationChange()
-        {
-            if(camera)
-            {
-                //alert(model.rotation.z);
-                if(window.orientation===0)
-                {
-                    camera.rotation.z = Math.PI/2;
-                }
-                else{
-                    camera.rotation.z = 0;
-                }
-            }
+        function orientationChange() {
+            // if (camera) {
+            //     //alert(model.rotation.z);
+            //     if (window.orientation === 0) {
+            //         camera.rotation.z = Math.PI / 2;
+            //     }
+            //     else {
+            //         camera.rotation.z = 0;
+            //     }
+            // }
         }
 
         function initQrcode() {
@@ -112,10 +128,13 @@
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
             renderer.setClearColor(0x000000, 0);
             renderer.setSize(canvas.width, window.height);
-            
 
-            camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.01, 10);
-            camera.position.z = 1;
+
+            // camera = new THREE.PerspectiveCamera(70, video.width/video.height, 0.01, 10);
+            // camera.position.z = 5;
+
+            camera = new THREE.PerspectiveCamera(75, video.width / video.height, 0.1, 50);
+            camera.position.z = 30;
 
             scene = new THREE.Scene();
 
@@ -130,9 +149,12 @@
             model = markerRoot;
             markerRoot.matrixAutoUpdate = false;
 
+            var geometry = new THREE.ConeBufferGeometry(5, 20, 32);
+            var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+
             var mesh = new THREE.Mesh(
-                new THREE.BoxGeometry(1, 1, 1),
-                new THREE.MeshNormalMaterial()
+                geometry,
+                material
             );
             markerRoot.add(mesh);
             scene.add(markerRoot);
@@ -236,6 +258,7 @@
         }
 
         function setProjectionMatrix(projectionMatrix, value) {
+            //camera.projectionMatrix.fromArray(arController.getCameraMatrix());
             if (typeof projectionMatrix.elements.set === "function") {
                 projectionMatrix.elements.set(value);
             } else {
@@ -257,6 +280,9 @@
 
         if (isMobile()) {
             hdConstraints.video.facingMode = { "exact": "environment" };
+            if (width.orientation === 0) {
+                document.body.className = "portrait";
+            }
         }
         else {
             document.body.className = "desktop";
