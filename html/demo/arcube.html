@@ -39,21 +39,6 @@
     </script>
     <script src="temp.js"></script>
     <script>
-        function orientationChange()
-        {
-            if(camera)
-            {
-                //alert(model.rotation.z);
-                if(window.orientation===0)
-                {
-                    camera.rotation.z = Math.PI/2;
-                }
-                else{
-                    camera.rotation.z = 0;
-                }
-            }
-        }
-
         function initQrcode() {
             codeReader = new ZXingBrowser.BrowserMultiFormatReader();
             codeReader.decodeFromVideoElement(video, (result, error, controls) => {
@@ -69,11 +54,11 @@
             cameraParam.onload = function () {
                 arController = new ARController(video, cameraParam);
 
-                window.onorientationchange = function (e) {
-                    orientationChange();
-                }
+                // window.onorientationchange = function (e) {
+                //     orientationChange();
+                // }
 
-                orientationChange();
+                // orientationChange();
 
                 arController.addEventListener('getMarker', function (ev) {
                     getMarker(ev);
@@ -112,7 +97,6 @@
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
             renderer.setClearColor(0x000000, 0);
             renderer.setSize(canvas.width, window.height);
-            
 
             camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.01, 10);
             camera.position.z = 1;
@@ -128,7 +112,10 @@
 
             var markerRoot = new THREE.Object3D();
             model = markerRoot;
+            markerRoot.wasVisible = false;
+            markerRoot.markerMatrix = new Float64Array(12);
             markerRoot.matrixAutoUpdate = false;
+            camera.matrixAutoUpdate = false;
 
             var mesh = new THREE.Mesh(
                 new THREE.BoxGeometry(1, 1, 1),

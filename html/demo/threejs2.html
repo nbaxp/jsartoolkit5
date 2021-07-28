@@ -24,12 +24,20 @@
         var camera = new THREE.PerspectiveCamera(70, canvas.width / canvas.height, 0.01, 10);
         var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
         //
+        var markerRoot = new THREE.Object3D();
+        markerRoot.wasVisible = false;
+        markerRoot.markerMatrix = new Float64Array(12);
+        markerRoot.matrixAutoUpdate = false;
+
         var geometry = new THREE.BoxGeometry(0.2, 0.2, 0.2);
         var material = new THREE.MeshNormalMaterial();
         var mesh = new THREE.Mesh(geometry, material);
+        markerRoot.add(mesh);
+        scene.add(markerRoot);
         //
-        scene.add(mesh);
+        //camera.matrixAutoUpdate = false;
         camera.position.z = 1;
+        //
         renderer.setClearColor(0x000000, 0);
         renderer.setSize(canvas.width, canvas.height);
         renderer.setAnimationLoop(function (time) {
