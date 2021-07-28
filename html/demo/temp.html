@@ -109,8 +109,8 @@
                 arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
                 arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
 
-                // arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
-                // });
+                arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
+                });
 
                 //var list = [];
                 //78
@@ -156,13 +156,14 @@
             model = markerRoot;
             markerRoot.matrixAutoUpdate = false;
 
-            var geometry = new THREE.ConeBufferGeometry( 1, 2, 4 );
-            var material = new THREE.MeshNormalMaterial();
-
             var mesh = new THREE.Mesh(
-                geometry,
-                material
+                new THREE.TorusGeometry(0.3, 0.2, 8, 8),
+                new THREE.MeshNormalMaterial()
             );
+            mesh.material.shading = THREE.FlatShading;
+            mesh.position.z = 0.5;
+            mesh.rotation.x = Math.PI / 2;
+
             markerRoot.add(mesh);
             scene.add(markerRoot);
 
@@ -187,34 +188,31 @@
             var currentMarkerId;
             if (markerType === artoolkit.PATTERN_MARKER) {
                 currentMarkerId = ev.data.marker.idPatt;
-                log("Pattern", markerId);
+                log("Pattern", currentMarkerId);
             } else if (markerType === artoolkit.BARCODE_MARKER) {
                 currentMarkerId = ev.data.marker.idMatrix;
-                log("Barcode", ev.data.marker.idMatrix);
+                log("Barcode", currentMarkerId);
             }
             else if (markerType == artoolkit.NFT_MARKER) {
                 currentMarkerId = ev.data.marker.id;
-                log("NFT", ev.data.marker.id);
+                log("NFT", currentMarkerId);
             }
             var lost = false;
 
-            if (ev.data.type > 0) {
+            if (ev.data.type >= 0) {
                 var currentMarkerNumber = currentMarkerId * 10000000 + currentMarkerId;
                 console.log('Marker:' + currentMarkerNumber);
                 if (!markerNumber) {
                     var model = getModel(currentMarkerNumber);
                     if (model) {
                         markerNumber = currentMarkerNumber;
-                        model.visible = true;
-                        setProjectionMatrix(model.matrix, ev.data.matrixGL_RH);
+                        setProjectionMatrix(model, ev);
                     }
                 }
                 else {
                     if (currentMarkerNumber === markerNumber) {
                         var model = getModel(currentMarkerNumber);
-                        if (model) {
-                            setProjectionMatrix(model.matrix, ev.data.matrixGL_RH);
-                        }
+                        setProjectionMatrix(model, ev);
                         //var model = getModel(currentMarkerNumber);
                     }
                     else {
@@ -227,7 +225,7 @@
                         model.visible = false;
                         markerNumber = currentMarkerNumber;
                         var model = getModel(currentMarkerNumber);
-                        model.visible = true;
+                        setProjectionMatrix(model, ev);
                     }
                 }
 
@@ -264,12 +262,11 @@
             console.log('video.play');
         }
 
-        function setProjectionMatrix(projectionMatrix, value) {
+        function setProjectionMatrix(model, ev) {
             //camera.projectionMatrix.fromArray(arController.getCameraMatrix());
-            if (typeof projectionMatrix.elements.set === "function") {
-                projectionMatrix.elements.set(value);
-            } else {
-                projectionMatrix.elements = [].slice.call(value);
+            if (model) {
+                model.matrix.fromArray(ev.data.matrixGL_RH);
+                model.visible = true;
             }
         };
     </script>

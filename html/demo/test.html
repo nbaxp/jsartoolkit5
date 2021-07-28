@@ -18,9 +18,9 @@
             transform: rotate(-90deg) translateX(-100%);
         }
 
-        .desktop canvas {
+        /* .desktop canvas {
             transform: scale(-1, 1);
-        }
+        } */
     </style>
 </head>
 
@@ -39,6 +39,7 @@
                 ARController.getUserMediaThreeScene({
                     maxARVideoSize: 320, cameraParam: '/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat',
                     onSuccess: function (arScene, arController, arCamera) {
+                        //arController.setPatternDetectionMode(artoolkit.AR_MATRIX_CODE_DETECTION);
 
                         document.body.className = arController.orientation;
 
@@ -85,25 +86,29 @@
                         torus.position.z = 0.5;
                         torus.rotation.x = Math.PI / 2;
 
-                        arController.loadNFTMarker('/examples/DataNFT/pinball', function (markerId) {
-                            var markerRoot = arController.createThreeNFTMarker(markerId);
-                            markerRoot.add(sphere);
-                            arScene.scene.add(markerRoot);
-                        });
+                        // arController.loadNFTMarker('/examples/DataNFT/pinball', function (markerId) {
+                        //     var markerRoot = arController.createThreeNFTMarker(markerId);
+                        //     markerRoot.add(sphere);
+                        //     arScene.scene.add(markerRoot);
+                        // });
 
                         arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
                             var markerRoot = arController.createThreeMarker(markerId);
                             markerRoot.add(torus);
                             arScene.scene.add(markerRoot);
                         });
+                        
+                        var markerRoot = arController.createThreeBarcodeMarker(20);
+                        markerRoot.add(sphere);
+                        arScene.scene.add(markerRoot);
 
                         var tick = function () {
                             arScene.process();
 
-                            rotationV += (rotationTarget - sphere.rotation.z) * 0.05;
-                            sphere.rotation.z += rotationV;
-                            torus.rotation.y += rotationV;
-                            rotationV *= 0.8;
+                            // rotationV += (rotationTarget - sphere.rotation.z) * 0.05;
+                            // sphere.rotation.z += rotationV;
+                            // torus.rotation.y += rotationV;
+                            // rotationV *= 0.8;
 
                             arScene.renderOn(renderer);
                             requestAnimationFrame(tick);
