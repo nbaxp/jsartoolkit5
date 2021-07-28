@@ -15,10 +15,10 @@
             overflow-x: hidden;
         }
 
-        /* .portrait canvas {
+        .portrait canvas {
             transform-origin: 0 0;
             transform: rotate(-90deg) translateX(-100%);
-        } */
+        }
 
         /* .desktop canvas {
             transform: scale(-1, 1);
@@ -43,6 +43,7 @@
     <script src="/demo/three.js/js/loaders/GLTFLoader.js"></script>
     <script src="/demo/three.js/js/libs/fflate.min.js"></script>
     <script src="/demo/three.js/js/loaders/FBXLoader.js"></script>
+    <script src="/demo/three.js/js/loaders/FBXLoader.js"></script>
     <script src="/build/artoolkit_wasm.js"></script>
     <script src="/qrcode/zxing-js/zxing-browser.min.js"></script>
     <script>
@@ -59,6 +60,12 @@
     <script src="temp.js"></script>
     <script>
         function orientationChange() {
+            if (width.orientation === 0) {
+                document.body.className = "portrait";
+            }
+            else {
+                document.body.className = "desktop";
+            }
             // if (camera) {
             //     //alert(model.rotation.z);
             //     if (window.orientation === 0) {
@@ -134,7 +141,7 @@
             // camera.position.z = 5;
 
             camera = new THREE.PerspectiveCamera(75, video.width / video.height, 0.1, 50);
-            camera.position.z = 30;
+            camera.position.z = 3;
 
             scene = new THREE.Scene();
 
@@ -149,8 +156,8 @@
             model = markerRoot;
             markerRoot.matrixAutoUpdate = false;
 
-            var geometry = new THREE.ConeBufferGeometry(5, 20, 32);
-            var material = new THREE.MeshBasicMaterial({ color: 0xffff00 });
+            var geometry = new THREE.ConeBufferGeometry( 1, 2, 4 );
+            var material = new THREE.MeshNormalMaterial();
 
             var mesh = new THREE.Mesh(
                 geometry,
@@ -280,12 +287,6 @@
 
         if (isMobile()) {
             hdConstraints.video.facingMode = { "exact": "environment" };
-            if (width.orientation === 0) {
-                document.body.className = "portrait";
-            }
-        }
-        else {
-            document.body.className = "desktop";
         }
 
         if (navigator.getUserMedia) {
