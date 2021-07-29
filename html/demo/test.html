@@ -106,11 +106,6 @@
                     arController.orientation = 'portrait';
                     arController.videoWidth = video.height;
                     arController.videoHeight = video.width;
-                    if (model) {
-                        if (orientationStart !== window.orientation) {
-                            //model.rotation.x = Math.PI / 2;
-                        }
-                    }
                 }
                 else {
                     arController.orientation = 'landscape';
@@ -118,9 +113,14 @@
                     arController.videoHeight = video.videoHeightStart;
                 }
                 window.document.body.className = arController.orientation;
-                if (renderer) {
-                    renderer.setSize(canvas.width, canvas.height);
-                }
+                //plane.rotation.z = Math.PI / 2;
+            }
+            if (renderer) {
+                alert('orientationchange>renderer.setSize:' + canvas.width + 'x' + canvas.height);
+                renderer.setSize(canvas.width, canvas.height);
+            }
+            if (plane) {
+                plane.rotation.z = window.orientation === 0 ? Math.PI / 2 : 0;
             }
         }
     </script>
@@ -302,7 +302,6 @@
 
             var w = canvas.width;
             var h = canvas.height;
-            //alert(window.orientation + ':' + arController.orientation);
             if (window.orientation === 0) {
                 //w = (window.innerWidth / arController.videoHeight) * arController.videoWidth;
                 //h = window.innerWidth;
@@ -319,7 +318,7 @@
                     document.body.className = 'desktop';
                 }
             }
-
+            alert('init>renderer.setSize:' + w + 'x' + h);
             loadMarker(arController, arScene);
 
             var tick = function () {
@@ -388,9 +387,10 @@
             torus.material.shading = THREE.FlatShading;
             torus.position.z = 0.5;
             torus.rotation.x = Math.PI / 2;
-            if (arController.orientation === 'portrait') {
-                torus.rotation.z = Math.PI / 2;
-            }
+            // if (arController.orientation === 'portrait') {
+            //     alert(1);
+            //     torus.rotation.z = Math.PI / 2;
+            // }
 
             arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
                 var markerRoot = arController.createThreeMarker(markerId);
