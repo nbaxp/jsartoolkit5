@@ -130,12 +130,9 @@
         }
 
         function initThreejs() {
-
-
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
             renderer.setClearColor(0x000000, 0);
             renderer.setSize(canvas.width, window.height);
-
 
             // camera = new THREE.PerspectiveCamera(70, video.width/video.height, 0.01, 10);
             // camera.position.z = 5;
@@ -252,6 +249,7 @@
                 canvas.height = video.height;
                 window.onresize = function (e) {
                     resize(video, canvas);
+                    renderer.setSize(canvas.width, window.height);
                 }
                 resize(video, canvas);
                 setTimeout(() => {
