@@ -1,7 +1,7 @@
 <html>
 
 <head>
-    <title>Pattern marker example with Three.js and wasm</title>
+    <title>test</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
     <style>
         html,
@@ -12,6 +12,11 @@
             text-align: center;
             overflow-x: hidden;
         }
+
+        /* #video {
+            height: 100% !important;
+            width: 100% !important;
+        } */
 
         .portrait canvas {
             transform-origin: 0 0;
@@ -25,6 +30,8 @@
 </head>
 
 <body>
+    <video id='video'></video>
+    <canvas id='canvas'></canvas>
     <script type='text/javascript'>
         var artoolkit_wasm_url = '../build/artoolkit_wasm.wasm';
     </script>
@@ -32,283 +39,282 @@
     <script src="/examples/js/third_party/three.js/three.min.js"></script>
     <script src="/js/artoolkit.three.js"></script>
     <script>
-        function getUserMediaARController(configuration) {
-            var obj = {};
-            for (var i in configuration) {
-                obj[i] = configuration[i];
-            }
-            var onSuccess = configuration.onSuccess;
-            var cameraParamURL = configuration.cameraParam;
-            var onError = configuration.onError || function (err) {
-                console.error("ARController: Failed to load ARCameraParam", err);
-            }
-
-            obj.onSuccess = function () {
-                new ARCameraParam(cameraParamURL, function () {
-                    var arCameraParam = this;
-                    var maxSize = configuration.maxARVideoSize || Math.max(video.videoWidth, video.videoHeight);
-                    var f = maxSize / Math.max(video.videoWidth, video.videoHeight);
-                    var w = f * video.videoWidth;
-                    var h = f * video.videoHeight;
-                    if (video.videoWidth < video.videoHeight) {
-                        var tmp = w;
-                        w = h;
-                        h = tmp;
-                    }
-                    var arController = new ARController(w, h, arCameraParam);
-                    arController.image = video;
-                    if (video.videoWidth < video.videoHeight) {
-                        arController.orientation = 'portrait';
-                        arController.videoWidth = video.videoHeight;
-                        arController.videoHeight = video.videoWidth;
-                    } else {
-                        arController.orientation = 'landscape';
-                        arController.videoWidth = video.videoWidth;
-                        arController.videoHeight = video.videoHeight;
-                    }
-                    onSuccess(arController, arCameraParam);
-                }, function (err) {
-                    ARController._teardownVideo(video);
-                    onError(err);
-                });
-            };
-            var video = ARController.getUserMedia(obj);
-            return video;
+        function isMobile() {
+            return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
         }
-
-        function getUserMedia(configuration) {
-            var facing = configuration.facingMode || 'environment';
-
-            var onSuccess = configuration.onSuccess;
-            var onError = configuration.onError || function (err) { console.error("ARController.getUserMedia", err); };
-
-            var video = document.createElement('video');
-
-            var readyToPlay = false;
-            var eventNames = [
-                'touchstart', 'touchend', 'touchmove', 'touchcancel',
-                'click', 'mousedown', 'mouseup', 'mousemove',
-                'keydown', 'keyup', 'keypress', 'scroll'
-            ];
-            var play = function () {
-                if (readyToPlay) {
-                    video.play().then(function () {
-                        onSuccess(video);
-                    }).catch(function (error) {
-                        onError(error);
-                        ARController._teardownVideo(video);
-                    });
-                    if (!video.paused) {
-                        eventNames.forEach(function (eventName) {
-                            window.removeEventListener(eventName, play, true);
-                        });
-                    }
-                }
-            };
-            eventNames.forEach(function (eventName) {
-                window.addEventListener(eventName, play, true);
-            });
-
-            var success = function (stream) {
-                //DEPRECATED: don't use window.URL.createObjectURL(stream) any longer it might be removed soon. Only there to support old browsers src: https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL
-                if (window.URL.createObjectURL) {
-                    //Need to add try-catch because iOS 11 fails to createObjectURL from stream. As this is deprecated  we should remove this soon
-                    try {
-                        video.srcObject = stream; // DEPRECATED: this feature is in the process to being deprecated
-                    }
-                    catch (ex) {
-                        // Nothing todo, the purpose of this is to remove an error from the console on iOS 11
-                    }
-                }
-                video.srcObject = stream; // This should be used instead. Which has the benefit to give us access to the stream object
-                readyToPlay = true;
-                video.autoplay = true;
-                video.playsInline = true;
-                play(); // Try playing without user input, should work on non-Android Chrome
-            };
-
-            var constraints = {};
-            var mediaDevicesConstraints = {};
-            if (configuration.width) {
-                mediaDevicesConstraints.width = configuration.width;
-                if (typeof configuration.width === 'object') {
-                    if (configuration.width.max) {
-                        constraints.maxWidth = configuration.width.max;
-                    }
-                    if (configuration.width.min) {
-                        constraints.minWidth = configuration.width.min;
-                    }
-                } else {
-                    constraints.maxWidth = configuration.width;
-                }
-            }
-
-            if (configuration.height) {
-                mediaDevicesConstraints.height = configuration.height;
-                if (typeof configuration.height === 'object') {
-                    if (configuration.height.max) {
-                        constraints.maxHeight = configuration.height.max;
-                    }
-                    if (configuration.height.min) {
-                        constraints.minHeight = configuration.height.min;
-                    }
-                } else {
-                    constraints.maxHeight = configuration.height;
-                }
-            }
-
-            mediaDevicesConstraints.facingMode = facing;
-            mediaDevicesConstraints.deviceId = configuration.deviceId;
-
-            // @ts-ignore: Ignored because it is needed to support older browsers
-            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-            var hdConstraints = {
-                audio: false,
-                video: constraints
-            };
-
-
-            // @ts-ignore: ignored because it is needed to support older browsers
-            if (navigator.mediaDevices || window.MediaStreamTrack.getSources) {
-                if (navigator.mediaDevices) {
-                    navigator.mediaDevices.getUserMedia({
-                        audio: false,
-                        video: mediaDevicesConstraints
-                    }).then(success, onError);
-                } else {
-                    // This function of accessing the media device is deprecated and outdated and shouldn't be used anymore.
-                    // @ts-ignore: ignored because it is needed to support older browsers
-                    window.MediaStreamTrack.getSources(function (sources) {
-                        var facingDir = mediaDevicesConstraints.facingMode;
-                        if (facing && facing.exact) {
-                            facingDir = facing.exact;
-                        }
-                        for (var i = 0; i < sources.length; i++) {
-                            if (sources[i].kind === 'video' && sources[i].facing === facingDir) {
-                                hdConstraints.video.mandatory.sourceId = sources[i].id;
-                                break;
-                            }
-                        }
-                        if (facing && facing.exact && !hdConstraints.video.mandatory.sourceId) {
-                            onError('Failed to get camera facing the wanted direction');
-                        } else {
-                            if (navigator.getUserMedia) {
-                                navigator.getUserMedia(hdConstraints, success, onError);
-                            } else {
-                                onError('navigator.getUserMedia is not supported on your browser');
-                            }
-                        }
-                    });
-                }
+        var setProjectionMatrix = function (projectionMatrix, value) {
+            if (typeof projectionMatrix.elements.set === "function") {
+                projectionMatrix.elements.set(value);
             } else {
-                if (navigator.getUserMedia) {
-                    navigator.getUserMedia(hdConstraints, success, onError);
-                } else {
-                    onError('navigator.getUserMedia is not supported on your browser');
-                }
+                projectionMatrix.elements = [].slice.call(value);
             }
-
-            return video;
+        };
+    </script>
+    <script>
+        function getUserMediaSuccessCallback(stream) {
+            video.srcObject = stream;
+            video.onloadedmetadata = function (e) {
+                video.width = e.srcElement.videoWidth;
+                video.height = e.srcElement.videoHeight;
+                canvas.width = video.width;
+                canvas.height = video.height;
+                window.onresize = function (e) {
+                    canvas.width = video.width;
+                    canvas.height = video.height;
+                    //renderer.setSize(canvas.width, window.height);
+                }
+            };
+            video.play().then(function () {
+                var profile = "/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat";
+                var cameraParam = new ARCameraParam(profile);
+                cameraParam.onload = function () {
+                    ARCameraParamOnLoad(cameraParam);
+                }
+            });
         }
     </script>
-
     <script>
-        var configuration = {
-            maxARVideoSize: 320, cameraParam: '/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat',
-            onSuccess: function (arScene, arController, arCamera) {
-                //arController.setPatternDetectionMode(artoolkit.AR_MATRIX_CODE_DETECTION);
+        function ARCameraParamOnLoad(arCameraParam) {
+            var maxSize = 320;
+            var f = maxSize / Math.max(video.videoWidth, video.videoHeight);
+            var w = f * video.videoWidth;
+            var h = f * video.videoHeight;
+            if (video.videoWidth < video.videoHeight) {
+                var tmp = w;
+                w = h;
+                h = tmp;
+            }
+            var arController = new ARController(w, h, arCameraParam);
+            arController.image = video;
+            if (video.videoWidth < video.videoHeight) {
+                arController.orientation = 'portrait';
+                arController.videoWidth = video.videoHeight;
+                arController.videoHeight = video.videoWidth;
+            } else {
+                arController.orientation = 'landscape';
+                arController.videoWidth = video.videoWidth;
+                arController.videoHeight = video.videoHeight;
+            }
+            arControllerSetup(arController);
+            var scenes = createThreeScene(arController);
+            init(scenes, arController, arCameraParam);
+        }
+    </script>
+    <script>
+        function arControllerSetup(arController) {
+            arController.addEventListener('getMarker', function (ev) {
+                var marker = ev.data.marker;
+                var obj;
+                if (ev.data.type === artoolkit.PATTERN_MARKER) {
+                    obj = this.threePatternMarkers[marker.idPatt];
 
-                document.body.className = arController.orientation;
+                } else if (ev.data.type === artoolkit.BARCODE_MARKER) {
+                    obj = this.threeBarcodeMarkers[marker.idMatrix];
 
-                var renderer = new THREE.WebGLRenderer({ antialias: true });
-                if (arController.orientation === 'portrait') {
-                    var w = (window.innerWidth / arController.videoHeight) * arController.videoWidth;
-                    var h = window.innerWidth;
-                    renderer.setSize(w, h);
-                    renderer.domElement.style.paddingBottom = (w - h) + 'px';
-                } else {
-                    if (/Android|mobile|iPad|iPhone/i.test(navigator.userAgent)) {
-                        renderer.setSize(window.innerWidth, (window.innerWidth / arController.videoWidth) * arController.videoHeight);
-                    } else {
-                        renderer.setSize(arController.videoWidth, arController.videoHeight);
-                        document.body.className += ' desktop';
-                    }
                 }
+                if (obj) {
+                    setProjectionMatrix(obj.matrix, ev.data.matrixGL_RH);
+                    obj.visible = true;
+                }
+            });
+            arController.addEventListener('getNFTMarker', function (ev) {
+                var marker = ev.data.marker;
+                var obj;
 
-                document.body.insertBefore(renderer.domElement, document.body.firstChild);
+                console.log('Found NFT marker', marker, obj);
 
-                var rotationV = 0;
-                var rotationTarget = 0;
+                obj = this.threeNFTMarkers[marker.id];
 
-                renderer.domElement.addEventListener('click', function (ev) {
-                    ev.preventDefault();
-                    rotationTarget += 1;
-                }, false);
+                if (obj) {
+                    obj.matrix.fromArray(ev.data.matrixGL_RH);
+                    obj.visible = true;
+                }
+            });
+            arController.addEventListener('lostNFTMarker', function (ev) {
+                var marker = ev.data.marker;
+                var obj;
 
-                var sphere = new THREE.Mesh(
-                    new THREE.SphereGeometry(0.5, 8, 8),
-                    new THREE.MeshNormalMaterial()
-                );
-                sphere.material.flatShading;
-                sphere.position.z = 40;
-                sphere.position.x = 80;
-                sphere.position.y = 80;
-                sphere.scale.set(80, 80, 80);
+                console.log('Lost NFT marker', marker, obj);
 
-                var torus = new THREE.Mesh(
-                    new THREE.TorusGeometry(0.3, 0.2, 8, 8),
-                    new THREE.MeshNormalMaterial()
-                );
-                torus.material.shading = THREE.FlatShading;
-                torus.position.z = 0.5;
-                torus.rotation.x = Math.PI / 2;
+                obj = this.threeNFTMarkers[marker.id];
 
-                // arController.loadNFTMarker('/examples/DataNFT/pinball', function (markerId) {
-                //     var markerRoot = arController.createThreeNFTMarker(markerId);
-                //     markerRoot.add(sphere);
-                //     arScene.scene.add(markerRoot);
-                // });
+                if (obj) {
+                    obj.matrix.fromArray(ev.data.matrixGL_RH);
 
-                arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
-                    var markerRoot = arController.createThreeMarker(markerId);
-                    markerRoot.add(torus);
-                    arScene.scene.add(markerRoot);
-                });
+                    // TODO make it maybe more stable, making the object not visible
+                    // only after some ms of lost tracking?
+                    obj.visible = false;
+                }
+            });
+            arController.addEventListener('getMultiMarker', function (ev) {
+                var obj = this.threeMultiMarkers[ev.data.multiMarkerId];
+                if (obj) {
+                    obj.matrix.fromArray(ev.data.matrixGL_RH);
+                    obj.visible = true;
+                }
+            });
+            arController.addEventListener('getMultiMarkerSub', function (ev) {
+                var marker = ev.data.multiMarkerId;
+                var subMarkerID = ev.data.markerIndex;
+                var subMarker = ev.data.marker;
+                var obj = this.threeMultiMarkers[marker];
+                if (obj && obj.markers && obj.markers[subMarkerID]) {
+                    var sub = obj.markers[subMarkerID];
+                    sub.matrix.fromArray(ev.data.matrixGL_RH);
+                    sub.visible = (subMarker.visible >= 0);
+                }
+            });
+            arController.threePatternMarkers = {};
+            arController.threeNFTMarkers = {};
+            arController.threeBarcodeMarkers = {};
+            arController.threeMultiMarkers = {};
+        }
+    </script>
+    <script>
+        function createThreeScene(arController) {
+            var videoTex = new THREE.Texture(video);
 
-                var markerRoot = arController.createThreeBarcodeMarker(20);
-                markerRoot.add(sphere);
+            videoTex.minFilter = THREE.LinearFilter;
+            videoTex.flipY = false;
+
+            // Then create a plane textured with the video.
+            var plane = new THREE.Mesh(
+                new THREE.PlaneBufferGeometry(2, 2),
+                new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.DoubleSide })
+            );
+
+            // The video plane shouldn't care about the z-buffer.
+            plane.material.depthTest = false;
+            plane.material.depthWrite = false;
+
+            // Create a camera and a scene for the video plane and
+            // add the camera and the video plane to the scene.
+            var videoCamera = new THREE.OrthographicCamera(-1, 1, -1, 1, -1, 1);
+            var videoScene = new THREE.Scene();
+            videoScene.add(plane);
+            videoScene.add(videoCamera);
+
+            if (arController.orientation === 'portrait') {
+                plane.rotation.z = Math.PI / 2;
+            }
+
+            var scene = new THREE.Scene();
+            var camera = new THREE.Camera();
+            camera.matrixAutoUpdate = false;
+            setProjectionMatrix(camera.projectionMatrix, arController.getCameraMatrix());
+
+            scene.add(camera);
+
+            var self = arController;
+
+            return {
+                scene: scene,
+                videoScene: videoScene,
+                camera: camera,
+                videoCamera: videoCamera,
+
+                arController: arController,
+
+                video: video,
+
+                process: function () {
+                    for (var i in self.threePatternMarkers) {
+                        self.threePatternMarkers[i].visible = false;
+                    }
+                    for (var i in self.threeNFTMarkers) {
+                        self.threeNFTMarkers[i].visible = false;
+                    }
+                    for (var i in self.threeBarcodeMarkers) {
+                        self.threeBarcodeMarkers[i].visible = false;
+                    }
+                    for (var i in self.threeMultiMarkers) {
+                        self.threeMultiMarkers[i].visible = false;
+                        for (var j = 0; j < self.threeMultiMarkers[i].markers.length; j++) {
+                            if (self.threeMultiMarkers[i].markers[j]) {
+                                self.threeMultiMarkers[i].markers[j].visible = false;
+                            }
+                        }
+                    }
+                    self.process(video);
+                },
+
+                renderOn: function (renderer) {
+                    videoTex.needsUpdate = true;
+
+                    var ac = renderer.autoClear;
+                    renderer.autoClear = false;
+                    renderer.clear();
+                    renderer.render(this.videoScene, this.videoCamera);
+                    renderer.render(this.scene, this.camera);
+                    renderer.autoClear = ac;
+                }
+            };
+        }
+    </script>
+    <script>
+        function init(arScene, arController, arCamera) {
+            document.body.className = arController.orientation;
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setClearColor(0x000000, 0);
+            if (arController.orientation === 'portrait') {
+                var w = (window.innerWidth / arController.videoHeight) * arController.videoWidth;
+                var h = window.innerWidth;
+                renderer.setSize(w, h);
+                renderer.domElement.style.paddingBottom = (w - h) + 'px';
+            } else {
+                if (/Android|mobile|iPad|iPhone/i.test(navigator.userAgent)) {
+                    renderer.setSize(window.innerWidth, (window.innerWidth / arController.videoWidth) * arController.videoHeight);
+                } else {
+                    renderer.setSize(arController.videoWidth, arController.videoHeight);
+                    document.body.className += ' desktop';
+                }
+            }
+
+            var torus = new THREE.Mesh(
+                new THREE.TorusGeometry(0.3, 0.2, 8, 8),
+                new THREE.MeshNormalMaterial()
+            );
+            torus.material.shading = THREE.FlatShading;
+            torus.position.z = 0.5;
+            torus.rotation.x = Math.PI / 2;
+
+            arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
+                var markerRoot = arController.createThreeMarker(markerId);
+                markerRoot.add(torus);
                 arScene.scene.add(markerRoot);
+            });
+            var tick = function () {
+                arScene.process();
+                arScene.renderOn(renderer);
+                requestAnimationFrame(tick);
+            };
+            tick();
+        }
+    </script>
+    <script>
+        var video = document.getElementById('video');
+        var canvas = document.getElementById('canvas');
 
-                var tick = function () {
-                    arScene.process();
-
-                    // rotationV += (rotationTarget - sphere.rotation.z) * 0.05;
-                    // sphere.rotation.z += rotationV;
-                    // torus.rotation.y += rotationV;
-                    // rotationV *= 0.8;
-
-                    arScene.renderOn(renderer);
-                    requestAnimationFrame(tick);
-                };
-
-                tick();
-
+        var hdConstraints = {
+            audio: false,
+            video: {
+                facingMode: "environment"
             }
         };
-        var obj = {};
-        for (var i in configuration) {
-            obj[i] = configuration[i];
+
+        if (isMobile()) {
+            hdConstraints.video.facingMode = { "exact": "environment" };
         }
-        var onSuccess = configuration.onSuccess;
 
-        obj.onSuccess = function (arController, arCameraParam) {
-            var scenes = arController.createThreeScene();
-            onSuccess(scenes, arController, arCameraParam);
-        };
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+        if (navigator.getUserMedia) {
+            navigator.getUserMedia(hdConstraints, getUserMediaSuccessCallback, function () {
+                console.error('getUserMediaErrorCallback')
+            });
+        } else {
+            console.error('getUserMedia');
+        }
 
-        var configuration = obj;
-
-        var video = this.getUserMediaARController(obj);
     </script>
 
 </body>
