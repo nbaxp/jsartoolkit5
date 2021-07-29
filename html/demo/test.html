@@ -270,6 +270,18 @@
                 }
             }
 
+            loadMarker(arController,arScene);
+
+            var tick = function () {
+                arScene.process();
+                arScene.renderOn(renderer);
+                requestAnimationFrame(tick);
+            };
+            tick();
+        }
+    </script>
+    <script>
+        function loadMarker(arController,arScene) {
             var torus = new THREE.Mesh(
                 new THREE.TorusGeometry(0.3, 0.2, 8, 8),
                 new THREE.MeshNormalMaterial()
@@ -283,12 +295,6 @@
                 markerRoot.add(torus);
                 arScene.scene.add(markerRoot);
             });
-            var tick = function () {
-                arScene.process();
-                arScene.renderOn(renderer);
-                requestAnimationFrame(tick);
-            };
-            tick();
         }
     </script>
     <script>
