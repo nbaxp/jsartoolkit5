@@ -1,145 +1,148 @@
-<!DOCTYPE html>
 <html>
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.5, maximum-scale=1">
-    <title>webcam</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
     <style>
+        html,
         body {
             margin: 0;
             padding: 0;
-            width: 100vw;
-            height: 100vh;
+            width: 100%;
             text-align: center;
-            overflow: hidden;
+            overflow-x: hidden;
         }
 
         video {
             height: 100% !important;
             width: 100% !important;
-            background-color: green;
         }
 
         canvas {
-            width: 0;
-            height: 0;
             position: absolute;
             top: 0;
             left: 0;
-            background-color: red;
+            background-color: burlywood;
             opacity: .5;
         }
+
+        .landscape {
+            background: lightblue;
+        }
+
+        .portrait {
+            background: lightgrey;
+        }
     </style>
+    <title>webcam</title>
 </head>
 
 <body>
-    <video id="video" playsInline muted autoplay></video>
-    <canvas id="canvas"></canvas>
+    <video id='video'></video>
+    <canvas id='canvas'></canvas>
     <script>
-        var video = document.getElementById('video');
-        var canvas = document.getElementById('canvas');
-        function resize() {
-            var screenWidth = document.documentElement.clientWidth;
-            var screenHeight = document.documentElement.clientHeight;
-            var videoWidth = video.width;
-            var videoHeight = video.height;
-            var message = isMobile() ? "m#" : 'd#';
-            message += window.orientation + '>';
-            if (!isMobile()) {
-                if (screenWidth / screenHeight > videoWidth / videoHeight) {
-                    canvas.style.width = videoWidth / videoHeight * screenHeight + 'px';
-                }
-                else {
-                    canvas.style.height = videoHeight / videoWidth * screenWidth + 'px';
-                }
-            }
-            else {
-                if (screenWidth / screenHeight > videoWidth / videoHeight) {//进入横屏
-                    if (videoWidth > videoHeight) {//横屏开始
-                        canvas.style.width = videoWidth / videoHeight * screenHeight + 'px';
-                        message = '横屏开始';
-                    }
-                    else {//竖屏开始
-                        canvas.style.width = videoHeight / videoWidth * screenHeight + 'px';
-                        message = '竖屏开始，进入横屏';
-                    }
-                }
-                else {//进入竖屏
-                    if (videoWidth > videoHeight) {//横屏开始
-                        canvas.style.height = videoWidth / videoHeight * screenWidth + 'px';
-                        message = '横屏开始，进入竖屏';
-                    }
-                    else {//竖屏开始
-                        canvas.style.height = videoHeight / videoWidth * screenWidth + 'px';
-                        message = '竖屏开始';
-                    }
-                }
-            }
-            if (screenWidth / screenHeight > videoWidth / videoHeight) {
-                canvas.style.height = screenHeight + 'px';
-                canvas.style.top = 0;
-                canvas.style.left = (screenWidth - canvas.clientWidth) / 2 + 'px';
-            }
-            else {
-                canvas.style.width = screenWidth + 'px';
-                canvas.style.top = (screenHeight - canvas.clientHeight) / 2 + 'px';
-                canvas.style.left = 0;
-            }
-            message += window.orientation
-            message += '#s:' + screenWidth + "x" + screenHeight;
-            message += "#v" + videoWidth + "x" + videoHeight;
-            message += '#c' + canvas.style.width + 'x' + canvas.style.height;
-            // var ctx = canvas.getContext("2d");
-            // ctx.clearRect(0, 0, canvas.width, canvas.height);
-            // ctx.font = "14px Georgia";
-            // ctx.fillText(message, 10, 50);
-        }
-        function success(stream) {
-            video.srcObject = stream;
-            video.onloadedmetadata = function (e) {
-                video.width = e.srcElement.videoWidth;
-                video.height = e.srcElement.videoHeight;
-                canvas.width = video.width;
-                canvas.height = video.height;
-                window.onresize = function (e) {
-                    resize();
-                };
-                resize();
-            };
-            video.play();
-        }
-
-        function errorCallback(e) {
-            console.log("Can't access user media", e);
-        }
-
         function isMobile() {
             return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
         }
     </script>
     <script>
-        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+        var width = 640;
+        var height = 480;
+        var videoWidthStart = null;
+        var videoHeightStart = null;
+        var orientationStart = window.orientation;
+    </script>
+    <script>
+        function getUserMediaSuccessCallback(stream) {
+            video.srcObject = stream;
+            video.onloadedmetadata = function (e) {
+                video.width = e.srcElement.videoWidth;
+                video.height = e.srcElement.videoHeight;
+                videoWidthStart = e.srcElement.videoWidth;
+                videoHeightStart = e.srcElement.videoHeight;
+                window.onresize = function (e) {
+                    resize();
+                }
+                resize();
+            };
+            video.play().then(function () {
+                console.log('video.play');
+            });
+        }
+    </script>
+    <script>
+        function resize() {
+            var screenWidth = document.documentElement.clientWidth;
+            var screenHeight = document.documentElement.clientHeight;
+            var videoWidth = video.width;
+            var videoHeight = video.height;
+            if (!isMobile()) {
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {
+                    canvas.width = videoWidth / videoHeight * screenHeight;
+                }
+                else {
+                    canvas.height = videoHeight / videoWidth * screenWidth;
+                }
+            }
+            else {
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {//进入横屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.width = videoWidth / videoHeight * screenHeight;
+                    }
+                    else {//竖屏开始
+                        canvas.width = videoHeight / videoWidth * screenHeight;
+                    }
+                }
+                else {//进入竖屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.height = videoWidth / videoHeight * screenWidth;
+                    }
+                    else {//竖屏开始
+                        canvas.height = videoHeight / videoWidth * screenWidth;
+                    }
+                }
+            }
+            if (screenWidth / screenHeight > videoWidth / videoHeight) {
+                canvas.height = screenHeight;
+                canvas.style.width = canvas.width + 'px';
+                canvas.style.height = canvas.height + 'px';
+                canvas.style.top = 0;
+                canvas.style.left = (screenWidth - canvas.clientWidth) / 2 + 'px';
+            }
+            else {
+                canvas.width = screenWidth;
+                canvas.style.width = canvas.width + 'px';
+                canvas.style.height = canvas.height + 'px';
+                canvas.style.top = (screenHeight - canvas.clientHeight) / 2 + 'px';
+                canvas.style.left = 0;
+            }
+            orientationchange();
+        }
+    </script>
+    <script>
+        function orientationchange() {
+            document.body.className = window.orientation === 0 ? 'portrait' : 'landscape';
+        }
+    </script>
+    <script>
+        var video = document.getElementById('video');
+        var canvas = document.getElementById('canvas');
 
         var hdConstraints = {
             audio: false,
             video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
+                facingMode: "environment"
             }
         };
 
-        if (isMobile()) {
-            hdConstraints.video.facingMode = { "exact": "environment" };
-        }
-        else {
-            document.body.className = "desktop";
+        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+        if (navigator.getUserMedia) {
+            navigator.getUserMedia(hdConstraints, getUserMediaSuccessCallback, function () {
+                console.error('getUserMediaErrorCallback')
+            });
+        } else {
+            console.error('getUserMedia');
         }
 
-        if (navigator.getUserMedia) {
-            navigator.getUserMedia(hdConstraints, success, errorCallback);
-        } else {
-            errorCallback('');
-        }
     </script>
 
 </body>
