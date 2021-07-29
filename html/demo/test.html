@@ -1,7 +1,6 @@
 <html>
 
 <head>
-    <title>test</title>
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
     <style>
         html,
@@ -13,10 +12,23 @@
             overflow-x: hidden;
         }
 
-        /* #video {
+        video {
             height: 100% !important;
             width: 100% !important;
-        } */
+            visibility: hidden;
+        }
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            background-color: lightblue;
+            opacity: .5;
+        }
+
+        .portrait {
+            background: gray;
+        }
 
         .portrait canvas {
             transform-origin: 0 0;
@@ -27,6 +39,7 @@
             transform: scale(-1, 1);
         } */
     </style>
+    <title>test>1</title>
 </head>
 
 <body>
@@ -51,18 +64,28 @@
         };
     </script>
     <script>
+        var width = 640;
+        var height = 480;
+        var videoWidthStart = null;
+        var videoHeightStart = null;
+        var orientationStart = window.orientation;
+        var arController = null;
+        var renderer = null;
+        var model = null;
+        var plane = null;
+    </script>
+    <script>
         function getUserMediaSuccessCallback(stream) {
             video.srcObject = stream;
             video.onloadedmetadata = function (e) {
                 video.width = e.srcElement.videoWidth;
                 video.height = e.srcElement.videoHeight;
-                canvas.width = video.width;
-                canvas.height = video.height;
+                videoWidthStart = e.srcElement.videoWidth;
+                videoHeightStart = e.srcElement.videoHeight;
                 window.onresize = function (e) {
-                    canvas.width = video.width;
-                    canvas.height = video.height;
-                    //renderer.setSize(canvas.width, window.height);
+                    resize();
                 }
+                resize();
             };
             video.play().then(function () {
                 var profile = "/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat";
@@ -71,6 +94,34 @@
                     ARCameraParamOnLoad(cameraParam);
                 }
             });
+        }
+    </script>
+    <script>
+        function orientationchange(arController) {
+            if (window.orientation === 0) {
+                document.body.className = "portrait";
+            }
+            if (arController) {
+                if (window.orientation === 0) {
+                    arController.orientation = 'portrait';
+                    arController.videoWidth = video.height;
+                    arController.videoHeight = video.width;
+                    if (model) {
+                        if (orientationStart !== window.orientation) {
+                            //model.rotation.x = Math.PI / 2;
+                        }
+                    }
+                }
+                else {
+                    arController.orientation = 'landscape';
+                    arController.videoWidth = video.videoWidthStart;
+                    arController.videoHeight = video.videoHeightStart;
+                }
+                window.document.body.className = arController.orientation;
+                if (renderer) {
+                    renderer.setSize(canvas.width, canvas.height);
+                }
+            }
         }
     </script>
     <script>
@@ -84,17 +135,12 @@
                 w = h;
                 h = tmp;
             }
-            var arController = new ARController(w, h, arCameraParam);
+            arController = new ARController(w, h, arCameraParam);
             arController.image = video;
-            if (video.videoWidth < video.videoHeight) {
-                arController.orientation = 'portrait';
-                arController.videoWidth = video.videoHeight;
-                arController.videoHeight = video.videoWidth;
-            } else {
-                arController.orientation = 'landscape';
-                arController.videoWidth = video.videoWidth;
-                arController.videoHeight = video.videoHeight;
+            window.onorientationchange = function (e) {
+                orientationchange(arController);
             }
+            orientationchange(arController);
             arControllerSetup(arController);
             var scenes = createThreeScene(arController);
             init(scenes, arController, arCameraParam);
@@ -116,6 +162,7 @@
                     setProjectionMatrix(obj.matrix, ev.data.matrixGL_RH);
                     obj.visible = true;
                 }
+                model = obj;
             });
             arController.addEventListener('getNFTMarker', function (ev) {
                 var marker = ev.data.marker;
@@ -178,7 +225,7 @@
             videoTex.flipY = false;
 
             // Then create a plane textured with the video.
-            var plane = new THREE.Mesh(
+            plane = new THREE.Mesh(
                 new THREE.PlaneBufferGeometry(2, 2),
                 new THREE.MeshBasicMaterial({ map: videoTex, side: THREE.DoubleSide })
             );
@@ -212,11 +259,8 @@
                 videoScene: videoScene,
                 camera: camera,
                 videoCamera: videoCamera,
-
                 arController: arController,
-
                 video: video,
-
                 process: function () {
                     for (var i in self.threePatternMarkers) {
                         self.threePatternMarkers[i].visible = false;
@@ -253,24 +297,30 @@
     </script>
     <script>
         function init(arScene, arController, arCamera) {
-            document.body.className = arController.orientation;
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
             renderer.setClearColor(0x000000, 0);
-            if (arController.orientation === 'portrait') {
-                var w = (window.innerWidth / arController.videoHeight) * arController.videoWidth;
-                var h = window.innerWidth;
-                renderer.setSize(w, h);
-                renderer.domElement.style.paddingBottom = (w - h) + 'px';
+
+            var w = canvas.width;
+            var h = canvas.height;
+            //alert(window.orientation + ':' + arController.orientation);
+            if (window.orientation === 0) {
+                //w = (window.innerWidth / arController.videoHeight) * arController.videoWidth;
+                //h = window.innerWidth;
+                //renderer.setSize(w, h);
+                //renderer.domElement.style.paddingBottom = (w - h) + 'px';
+                renderer.setSize(h, w);
             } else {
-                if (/Android|mobile|iPad|iPhone/i.test(navigator.userAgent)) {
-                    renderer.setSize(window.innerWidth, (window.innerWidth / arController.videoWidth) * arController.videoHeight);
+                renderer.setSize(w, h);
+                if (isMobile()) {
+                    //w = window.innerWidth;
+                    //h = (window.innerWidth / arController.videoWidth) * arController.videoHeight;
+                    renderer.setSize(w, h);
                 } else {
-                    renderer.setSize(arController.videoWidth, arController.videoHeight);
-                    document.body.className += ' desktop';
+                    document.body.className = 'desktop';
                 }
             }
 
-            loadMarker(arController,arScene);
+            loadMarker(arController, arScene);
 
             var tick = function () {
                 arScene.process();
@@ -281,7 +331,56 @@
         }
     </script>
     <script>
-        function loadMarker(arController,arScene) {
+        function resize() {
+            var screenWidth = document.documentElement.clientWidth;
+            var screenHeight = document.documentElement.clientHeight;
+            var videoWidth = video.width;
+            var videoHeight = video.height;
+            if (!isMobile()) {
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {
+                    canvas.width = videoWidth / videoHeight * screenHeight;
+                }
+                else {
+                    canvas.height = videoHeight / videoWidth * screenWidth;
+                }
+            }
+            else {
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {//进入横屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.width = videoWidth / videoHeight * screenHeight;
+                    }
+                    else {//竖屏开始
+                        canvas.width = videoHeight / videoWidth * screenHeight;
+                    }
+                }
+                else {//进入竖屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.height = videoWidth / videoHeight * screenWidth;
+                    }
+                    else {//竖屏开始
+                        canvas.height = videoHeight / videoWidth * screenWidth;
+                    }
+                }
+            }
+            if (screenWidth / screenHeight > videoWidth / videoHeight) {
+                canvas.height = screenHeight;
+                canvas.style.width = canvas.width + 'px';
+                canvas.style.height = canvas.height + 'px';
+                canvas.style.top = 0;
+                canvas.style.left = (screenWidth - canvas.clientWidth) / 2 + 'px';
+            }
+            else {
+                canvas.width = screenWidth;
+                canvas.style.width = canvas.width + 'px';
+                canvas.style.height = canvas.height + 'px';
+                canvas.style.top = (screenHeight - canvas.clientHeight) / 2 + 'px';
+                canvas.style.left = 0;
+            }
+            orientationchange(arController);
+        }
+    </script>
+    <script>
+        function loadMarker(arController, arScene) {
             var torus = new THREE.Mesh(
                 new THREE.TorusGeometry(0.3, 0.2, 8, 8),
                 new THREE.MeshNormalMaterial()
@@ -289,6 +388,9 @@
             torus.material.shading = THREE.FlatShading;
             torus.position.z = 0.5;
             torus.rotation.x = Math.PI / 2;
+            if (arController.orientation === 'portrait') {
+                torus.rotation.z = Math.PI / 2;
+            }
 
             arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
                 var markerRoot = arController.createThreeMarker(markerId);
