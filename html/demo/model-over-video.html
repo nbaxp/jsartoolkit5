@@ -52,7 +52,7 @@
         function isMobile() {
             return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
         }
-        var setProjectionMatrix = function (projectionMatrix, value) {
+        function setProjectionMatrix(projectionMatrix, value) {
             if (typeof projectionMatrix.elements.set === "function") {
                 projectionMatrix.elements.set(value);
             } else {
@@ -63,9 +63,6 @@
     <script>
         var width = 640;
         var height = 480;
-        var videoWidthStart = null;
-        var videoHeightStart = null;
-        var orientationStart = window.orientation;
         var arController = null;
         var renderer = null;
         var model = null;
@@ -77,8 +74,6 @@
             video.onloadedmetadata = function (e) {
                 video.width = e.srcElement.videoWidth;
                 video.height = e.srcElement.videoHeight;
-                videoWidthStart = e.srcElement.videoWidth;
-                videoHeightStart = e.srcElement.videoHeight;
                 window.onresize = function (e) {
                     resize();
                 }
@@ -95,8 +90,8 @@
     </script>
     <script>
         function resize() {
-            var screenWidth = document.documentElement.clientWidth;
-            var screenHeight = document.documentElement.clientHeight;
+            var screenWidth = window.innerWidth;
+            var screenHeight = window.innerHeight;
             var videoWidth = video.width;
             var videoHeight = video.height;
             if (!isMobile()) {
@@ -144,29 +139,17 @@
     </script>
     <script>
         function orientationchange(arController) {
-            if (window.orientation === 0) {
-                document.body.className = "portrait";
-            }
+            var cls = window.orientation === 0 ? "portrait" : "landscape";
+            document.body.className = cls;
             if (arController) {
-                if (window.orientation === 0) {
-                    arController.orientation = 'portrait';
-                    arController.videoWidth = video.height;
-                    arController.videoHeight = video.width;
-                }
-                else {
-                    arController.orientation = 'landscape';
-                    arController.videoWidth = video.videoWidthStart;
-                    arController.videoHeight = video.videoHeightStart;
-                }
-                window.document.body.className = arController.orientation;
+                arController.orientation = cls;
+                arController.videoWidth = window.orientation === 0 ? video.height : video.width;
+                arController.videoHeight = window.orientation === 0 ? video.width : video.height;
             }
             if (renderer) {
-                if (window.orientation === 0) {
-                    renderer.setSize(canvas.height, canvas.width);
-                }
-                else {
-                    renderer.setSize(canvas.width, canvas.height);
-                }
+                var width = window.orientation === 0 ? canvas.height : canvas.width;
+                var height = window.orientation === 0 ? canvas.width : canvas.height;
+                renderer.setSize(width, height);
             }
             if (plane) {
                 plane.rotation.z = window.orientation === 0 ? Math.PI / 2 : 0;
@@ -186,13 +169,75 @@
             }
             arController = new ARController(w, h, arCameraParam);
             arController.image = video;
-            window.onorientationchange = function (e) {
-                orientationchange(arController);
-            }
             orientationchange(arController);
             arControllerSetup(arController);
-            var scenes = createThreeScene(arController);
-            init(scenes, arController, arCameraParam);
+            Start(arController, arCameraParam);
+        }
+        function Start(arController, arCameraParam) {
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setClearColor(0x000000, 0);
+            var scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, video.width / video.height, 0.1, 50);
+            camera.position.z = 3;
+            camera.matrixAutoUpdate = false;
+            setProjectionMatrix(camera.projectionMatrix, arController.getCameraMatrix());
+            var light = new THREE.PointLight(0xffffff);
+            light.position.set(400, 500, 100);
+            scene.add(light);
+            scene.add(camera);
+            var markerRoot = new THREE.Object3D();
+            model = markerRoot;
+            markerRoot.matrixAutoUpdate = false;
+
+            var mesh = new THREE.Mesh(
+                new THREE.TorusGeometry(0.3, 0.2, 8, 8),
+                new THREE.MeshNormalMaterial()
+            );
+            mesh.material.shading = THREE.FlatShading;
+            mesh.position.z = 0.5;
+            mesh.rotation.x = Math.PI / 2;
+
+            markerRoot.add(mesh);
+            scene.add(markerRoot);
+            var animation = function (time) {
+                renderer.render(scene, camera);
+            }
+            renderer.setAnimationLoop(animation);
+
+            var w = canvas.width;
+            var h = canvas.height;
+            if (window.orientation === 0) {
+                renderer.setSize(h, w);
+            } else {
+                renderer.setSize(w, h);
+            }
+
+            arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
+            arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+            loadMarker(arController);
+
+            for (var i in arController.threePatternMarkers) {
+                arController.threePatternMarkers[i].visible = false;
+            }
+            for (var i in arController.threeNFTMarkers) {
+                arController.threeNFTMarkers[i].visible = false;
+            }
+            for (var i in arController.threeBarcodeMarkers) {
+                arController.threeBarcodeMarkers[i].visible = false;
+            }
+            for (var i in arController.threeMultiMarkers) {
+                arController.threeMultiMarkers[i].visible = false;
+                for (var j = 0; j < arController.threeMultiMarkers[i].markers.length; j++) {
+                    if (arController.threeMultiMarkers[i].markers[j]) {
+                        arController.threeMultiMarkers[i].markers[j].visible = false;
+                    }
+                }
+            }
+            var tick = function () {
+                arController.process(video);
+                requestAnimationFrame(tick);
+            };
+            tick();
         }
     </script>
     <script>
@@ -214,6 +259,10 @@
                     obj = getModel(ev);
                     setProjectionMatrix(obj.matrix, ev.data.matrixGL_RH);
                     obj.visible = true;
+                }
+                else {
+                    obj = getModel(ev);
+                    obj.visible = false;
                 }
             });
             arController.addEventListener('getNFTMarker', function (ev) {
@@ -239,7 +288,6 @@
 
                 if (obj) {
                     obj.matrix.fromArray(ev.data.matrixGL_RH);
-
                     // TODO make it maybe more stable, making the object not visible
                     // only after some ms of lost tracking?
                     obj.visible = false;
@@ -270,92 +318,7 @@
         }
     </script>
     <script>
-        function createThreeScene(arController) {
-            var self = arController;
-
-            return {
-                process: function () {
-                    for (var i in self.threePatternMarkers) {
-                        self.threePatternMarkers[i].visible = false;
-                    }
-                    for (var i in self.threeNFTMarkers) {
-                        self.threeNFTMarkers[i].visible = false;
-                    }
-                    for (var i in self.threeBarcodeMarkers) {
-                        self.threeBarcodeMarkers[i].visible = false;
-                    }
-                    for (var i in self.threeMultiMarkers) {
-                        self.threeMultiMarkers[i].visible = false;
-                        for (var j = 0; j < self.threeMultiMarkers[i].markers.length; j++) {
-                            if (self.threeMultiMarkers[i].markers[j]) {
-                                self.threeMultiMarkers[i].markers[j].visible = false;
-                            }
-                        }
-                    }
-                    self.process(video);
-                }
-            };
-        }
-    </script>
-    <script>
-        function init(arScene, arController, arCamera) {
-            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
-            renderer.setClearColor(0x000000, 0);
-            var scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, video.width / video.height, 0.1, 50);
-            camera.position.z = 3;
-            camera.matrixAutoUpdate = false;
-            setProjectionMatrix(camera.projectionMatrix, arController.getCameraMatrix());
-            var light = new THREE.PointLight(0xffffff);
-            light.position.set(400, 500, 100);
-            scene.add(light);
-            scene.add(camera);
-            var markerRoot = new THREE.Object3D();
-            model = markerRoot;
-            markerRoot.matrixAutoUpdate = false;
-
-            var mesh = new THREE.Mesh(
-                new THREE.TorusGeometry(0.3, 0.2, 8, 8),
-                new THREE.MeshNormalMaterial()
-            );
-            mesh.material.shading = THREE.FlatShading;
-            mesh.position.z = 0.5;
-            mesh.rotation.x = Math.PI / 2;
-
-            markerRoot.add(mesh);
-            scene.add(markerRoot);
-            var animation = function (time) {
-                renderer.render(scene, camera);
-            }
-
-            renderer.setAnimationLoop(animation);
-
-            var w = canvas.width;
-            var h = canvas.height;
-            if (window.orientation === 0) {
-                renderer.setSize(h, w);
-            } else {
-                renderer.setSize(w, h);
-                if (isMobile()) {
-                    renderer.setSize(w, h);
-                } else {
-                    document.body.className = 'desktop';
-                }
-            }
-
-            arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
-            arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
-            loadMarker(arController, arScene);
-
-            var tick = function () {
-                arScene.process();
-                requestAnimationFrame(tick);
-            };
-            tick();
-        }
-    </script>
-    <script>
-        function loadMarker(arController, arScene) {
+        function loadMarker(arController) {
             arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
             });
         }
