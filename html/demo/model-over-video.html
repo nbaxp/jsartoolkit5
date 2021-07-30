@@ -73,7 +73,6 @@
         var camera = null;
         var renderer = null;
         var model = null;
-        var plane = null;
     </script>
     <script>
         function getUserMediaSuccessCallback(stream) {
@@ -157,9 +156,6 @@
                 var width = window.orientation === 0 ? canvas.height : canvas.width;
                 var height = window.orientation === 0 ? canvas.width : canvas.height;
                 renderer.setSize(width, height);
-            }
-            if (plane) {
-                plane.rotation.z = window.orientation === 0 ? Math.PI / 2 : 0;
             }
         }
     </script>
