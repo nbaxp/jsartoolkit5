@@ -61,9 +61,16 @@
         };
     </script>
     <script>
-        var width = 640;
-        var height = 480;
+        var hdConstraints = {
+            audio: false,
+            video: {
+                width: { ideal: 640 },
+                height: { ideal: 480 },
+                facingMode: "environment"
+            }
+        };
         var arController = null;
+        var camera = null;
         var renderer = null;
         var model = null;
         var plane = null;
@@ -169,18 +176,35 @@
             }
             arController = new ARController(w, h, arCameraParam);
             arController.image = video;
+            arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
+            arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+
             orientationchange(arController);
+            threeJsStart();
             arControllerSetup(arController);
-            Start(arController, arCameraParam);
+
+            setProjectionMatrix(camera.projectionMatrix, arController.getCameraMatrix());
+            var w = canvas.width;
+            var h = canvas.height;
+            if (window.orientation === 0) {
+                renderer.setSize(h, w);
+            } else {
+                renderer.setSize(w, h);
+            }
+            var tick = function () {
+                arController.process(video);
+                requestAnimationFrame(tick);
+            };
+            tick();
         }
-        function Start(arController, arCameraParam) {
+        function threeJsStart() {
             renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
             renderer.setClearColor(0x000000, 0);
             var scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, video.width / video.height, 0.1, 50);
             camera.position.z = 3;
             camera.matrixAutoUpdate = false;
-            setProjectionMatrix(camera.projectionMatrix, arController.getCameraMatrix());
+
             var light = new THREE.PointLight(0xffffff);
             light.position.set(400, 500, 100);
             scene.add(light);
@@ -203,41 +227,6 @@
                 renderer.render(scene, camera);
             }
             renderer.setAnimationLoop(animation);
-
-            var w = canvas.width;
-            var h = canvas.height;
-            if (window.orientation === 0) {
-                renderer.setSize(h, w);
-            } else {
-                renderer.setSize(w, h);
-            }
-
-            arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
-            arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
-            loadMarker(arController);
-
-            for (var i in arController.threePatternMarkers) {
-                arController.threePatternMarkers[i].visible = false;
-            }
-            for (var i in arController.threeNFTMarkers) {
-                arController.threeNFTMarkers[i].visible = false;
-            }
-            for (var i in arController.threeBarcodeMarkers) {
-                arController.threeBarcodeMarkers[i].visible = false;
-            }
-            for (var i in arController.threeMultiMarkers) {
-                arController.threeMultiMarkers[i].visible = false;
-                for (var j = 0; j < arController.threeMultiMarkers[i].markers.length; j++) {
-                    if (arController.threeMultiMarkers[i].markers[j]) {
-                        arController.threeMultiMarkers[i].markers[j].visible = false;
-                    }
-                }
-            }
-            var tick = function () {
-                arController.process(video);
-                requestAnimationFrame(tick);
-            };
-            tick();
         }
     </script>
     <script>
@@ -245,6 +234,7 @@
             return model;
         }
         function arControllerSetup(arController) {
+
             arController.addEventListener('getMarker', function (ev) {
                 var marker = ev.data.marker;
                 var obj;
@@ -264,6 +254,7 @@
                     obj.visible = false;
                 }
             });
+
             arController.addEventListener('getNFTMarker', function (ev) {
                 var marker = ev.data.marker;
                 var obj;
@@ -274,6 +265,7 @@
                     obj.visible = true;
                 }
             });
+
             arController.addEventListener('lostNFTMarker', function (ev) {
                 var marker = ev.data.marker;
                 var obj;
@@ -285,6 +277,7 @@
                     obj.visible = false;
                 }
             });
+
             arController.addEventListener('getMultiMarker', function (ev) {
                 var obj = this.threeMultiMarkers[ev.data.multiMarkerId];
                 if (obj) {
@@ -292,6 +285,7 @@
                     obj.visible = true;
                 }
             });
+
             arController.addEventListener('getMultiMarkerSub', function (ev) {
                 var marker = ev.data.multiMarkerId;
                 var subMarkerID = ev.data.markerIndex;
@@ -303,10 +297,31 @@
                     sub.visible = (subMarker.visible >= 0);
                 }
             });
+
             arController.threePatternMarkers = {};
             arController.threeNFTMarkers = {};
             arController.threeBarcodeMarkers = {};
             arController.threeMultiMarkers = {};
+
+            loadMarker(arController);
+
+            for (var i in arController.threePatternMarkers) {
+                arController.threePatternMarkers[i].visible = false;
+            }
+            for (var i in arController.threeNFTMarkers) {
+                arController.threeNFTMarkers[i].visible = false;
+            }
+            for (var i in arController.threeBarcodeMarkers) {
+                arController.threeBarcodeMarkers[i].visible = false;
+            }
+            for (var i in arController.threeMultiMarkers) {
+                arController.threeMultiMarkers[i].visible = false;
+                for (var j = 0; j < arController.threeMultiMarkers[i].markers.length; j++) {
+                    if (arController.threeMultiMarkers[i].markers[j]) {
+                        arController.threeMultiMarkers[i].markers[j].visible = false;
+                    }
+                }
+            }
         }
     </script>
     <script>
@@ -330,14 +345,6 @@
     <script>
         var video = document.getElementById('video');
         var canvas = document.getElementById('canvas');
-        var hdConstraints = {
-            audio: false,
-            video: {
-                width: { ideal: width },
-                height: { ideal: height },
-                facingMode: "environment"
-            }
-        };
         start();
     </script>
 </body>
