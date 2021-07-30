@@ -253,7 +253,6 @@
 
                 } else if (ev.data.type === artoolkit.BARCODE_MARKER) {
                     obj = this.threeBarcodeMarkers[marker.idMatrix];
-
                 }
                 if (ev.data.type >= 0) {
                     obj = getModel(ev);
@@ -268,11 +267,8 @@
             arController.addEventListener('getNFTMarker', function (ev) {
                 var marker = ev.data.marker;
                 var obj;
-
                 console.log('Found NFT marker', marker, obj);
-
                 obj = this.threeNFTMarkers[marker.id];
-
                 if (obj) {
                     obj.matrix.fromArray(ev.data.matrixGL_RH);
                     obj.visible = true;
@@ -281,15 +277,11 @@
             arController.addEventListener('lostNFTMarker', function (ev) {
                 var marker = ev.data.marker;
                 var obj;
-
                 console.log('Lost NFT marker', marker, obj);
-
                 obj = this.threeNFTMarkers[marker.id];
-
                 if (obj) {
                     obj.matrix.fromArray(ev.data.matrixGL_RH);
-                    // TODO make it maybe more stable, making the object not visible
-                    // only after some ms of lost tracking?
+                    // TODO make it maybe more stable, making the object not visible only after some ms of lost tracking?
                     obj.visible = false;
                 }
             });
@@ -324,27 +316,30 @@
         }
     </script>
     <script>
+        function start() {
+            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+            if (navigator.getUserMedia) {
+                navigator.getUserMedia(hdConstraints, getUserMediaSuccessCallback, function () {
+                    console.error('getUserMediaErrorCallback')
+                });
+            } else {
+                console.error('getUserMedia');
+            }
+        }
+    </script>
+    <script>
         var video = document.getElementById('video');
         var canvas = document.getElementById('canvas');
-
         var hdConstraints = {
             audio: false,
             video: {
+                width: { ideal: width },
+                height: { ideal: height },
                 facingMode: "environment"
             }
         };
-
-        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-        if (navigator.getUserMedia) {
-            navigator.getUserMedia(hdConstraints, getUserMediaSuccessCallback, function () {
-                console.error('getUserMediaErrorCallback')
-            });
-        } else {
-            console.error('getUserMedia');
-        }
-
+        start();
     </script>
-
 </body>
 
 </html>
