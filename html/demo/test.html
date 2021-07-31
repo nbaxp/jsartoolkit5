@@ -35,6 +35,19 @@
             transform-origin: 0 0;
             transform: rotate(-90deg) translateX(-100%);
         }
+
+        #message {
+            font-size: 1.5em;
+            font-weight: bold;
+            padding: 1em;
+            background: #fff;
+            position: absolute;
+            width: 100%;
+            height: 5em;
+            top: 5em;
+            opacity: .5;
+            color: red;
+        }
     </style>
     <title>隐藏canvas，显示video</title>
 </head>
@@ -42,6 +55,7 @@
 <body>
     <video id='video'></video>
     <canvas id='canvas'></canvas>
+    <div id="message">loading...</div>
     <script type='text/javascript'>
         var artoolkit_wasm_url = '../build/artoolkit_wasm.wasm';
     </script>
@@ -51,6 +65,11 @@
     <script>
         function isMobile() {
             return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
+        }
+        function log(msg)
+        {
+            console.log(msg);
+            document.getElementById('message').innerText = msg;
         }
         function setProjectionMatrix(projectionMatrix, value) {
             if (typeof projectionMatrix.elements.set === "function") {
@@ -86,9 +105,11 @@
                 resize();
             };
             video.play().then(function () {
+                log('video play');
                 var profile = "/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat";
                 var cameraParam = new ARCameraParam(profile);
                 cameraParam.onload = function () {
+                    log('load arcamera');
                     ARCameraParamOnLoad(cameraParam);
                 }
             });
@@ -170,12 +191,16 @@
                 w = h;
                 h = tmp;
             }
+            log('start create arcontroller:'+w+'x'+h+'@'+arCameraParam);
             arController = new ARController(w, h, arCameraParam);
+            log('arcontroller created');
             arController.image = video;
-            arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
-            arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+            // arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
+            // arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+            
 
             orientationchange(arController);
+            log('start threejs');
             threeJsStart();
             arControllerSetup(arController);
 
@@ -187,6 +212,7 @@
             } else {
                 renderer.setSize(w, h);
             }
+            log('start artoolkit');
             var tick = function () {
                 arController.process(video);
                 requestAnimationFrame(tick);
@@ -235,20 +261,20 @@
                 var marker = ev.data.marker;
                 var obj;
                 if (ev.data.type === artoolkit.PATTERN_MARKER) {
-                    obj = this.threePatternMarkers[marker.idPatt];
+                    log(ev.data.marker.idPatt);
 
                 } else if (ev.data.type === artoolkit.BARCODE_MARKER) {
-                    obj = this.threeBarcodeMarkers[marker.idMatrix];
+                    log(ev.data.marker.idMatrix);
                 }
                 if (ev.data.type >= 0) {
                     obj = getModel(ev);
                     setProjectionMatrix(obj.matrix, ev.data.matrixGL_RH);
                     obj.visible = true;
                 }
-                else {
-                    obj = getModel(ev);
-                    obj.visible = false;
-                }
+                // else {
+                //     obj = getModel(ev);
+                //     obj.visible = false;
+                // }
             });
 
             arController.addEventListener('getNFTMarker', function (ev) {
@@ -341,7 +367,7 @@
     <script>
         var video = document.getElementById('video');
         var canvas = document.getElementById('canvas');
-        start();
+        window.addEventListener('artoolkit-loaded',()=>start());
     </script>
 </body>
 
