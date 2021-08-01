@@ -1,169 +1,86 @@
 <html>
 
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=0.5, maximum-scale=1">
-    <title>artoolkit1</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
     <style>
+        html,
         body {
             margin: 0;
             padding: 0;
-            background-color: #000;
-        }
-
-        .app {
+            width: 100%;
             text-align: center;
+            overflow-x: hidden;
         }
 
         video {
-            width: 100%;
-            height: 100%;
-            object-fit: contain;
+            height: 100% !important;
+            width: 100% !important;
         }
-        canvas{
-            width: 100%!important;
-            height: 100%!important;
+
+        canvas {
             position: absolute;
+            top: 0;
             left: 0;
         }
 
+        .landscape {
+            background: lightblue;
+        }
+
+        .portrait {
+            background: lightgrey;
+        }
+
+        .portrait canvas {
+            transform-origin: 0 0;
+            transform: rotate(-90deg) translateX(-100%);
+        }
+
         #message {
+            box-sizing: border-box;
+            display: inline-block;
+            line-height: 2em;
             font-size: 1.5em;
             font-weight: bold;
-            padding: 1em;
             background: #fff;
             position: absolute;
-            width: 100%;
-            height: 5em;
-            top: 5em;
+            top: 0;
+            left: 0;
             opacity: .5;
             color: red;
         }
+
+        .landscape #message {
+
+            width: 100vh;
+            transform: rotate(-90deg) translate(calc(-50vh + 1em), calc(-50vh + 1em));
+        }
+
+        .portrait #message {
+            width: 100%;
+        }
     </style>
+    <title>隐藏canvas，显示video</title>
 </head>
 
 <body>
-    <div class="app">
-        <video id="video" playsInline muted autoplay width="640" height="480"></video>
-        <canvas id="canvas"></canvas>
-        <div id="message">loading...</div>
-    </div>
+    <video id='video'></video>
+    <canvas id='canvas'></canvas>
+    <div id="message"></div>
+    <script type='text/javascript'>
+        var artoolkit_wasm_url = '../build/artoolkit_wasm.wasm';
+    </script>
+    <script src="/build/artoolkit_wasm.js"></script>
     <script src="/examples/js/third_party/three.js/three.min.js"></script>
-    <script async src="/build/artoolkit_wasm.js"></script>
-    <script src="/qrcode/zxing-js/zxing-browser.min.js"></script>
+    <script src="/js/artoolkit.three.js"></script>
     <script>
         function isMobile() {
             return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
         }
-
-        function errorCallback(e) {
-            console.log("Can't access user media", e);
+        function log(msg) {
+            console.log(msg);
+            document.getElementById('message').innerText = msg;
         }
-    </script>
-    <script>
-        var scene = new THREE.Scene();
-        geometry = new THREE.BoxGeometry(1, 1, 1);
-        material = new THREE.MeshNormalMaterial();
-
-        var cube = new THREE.Mesh(geometry, material);
-        cube.matrixAutoUpdate = false;
-        scene.add(cube);
-
-        var camera;
-        var renderer;
-        var canvas = document.getElementById('canvas');
-
-        function success(stream) {
-            video.srcObject = stream;
-            video.onclick = function () { video.play(); };
-            video.onloadedmetadata = function (e) {
-                canvas.width = video.width = e.srcElement.videoWidth;
-                canvas.height = video.height = e.srcElement.videoHeight
-                renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true,alpha: true });
-                renderer.setSize(canvas.width, canvas.height);
-                camera = new THREE.PerspectiveCamera(70, window.innerWidth / window.innerHeight, 0.01, 10);
-                camera.position.z = 1;
-            };
-            video.play();
-
-            codeReader = new ZXingBrowser.BrowserMultiFormatReader();
-            codeReader.decodeFromVideoElement(document.querySelector('#video'), (result, error, controls) => {
-                if (result) {
-                    log("QRCODE", result.text);
-                }
-            });
-
-            var profile = isMobile() ? '/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat' : '/examples/Data/camera_para.dat';
-            var cameraParam = new ARCameraParam(profile);
-
-            cameraParam.onload = function () {
-                var arController = new ARController(video, cameraParam);
-
-                window.onorientationchange = function (e) {
-                }
-
-                arController.addEventListener('getMarker', function (ev) {
-                    getMarker(ev);
-                });
-
-                arController.addEventListener('getNFTMarker', function (ev) {
-                    getMarker(ev);
-                });
-
-                arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
-                arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
-
-                arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
-                });
-
-                var list = [];
-                //78
-                for (var i = 1; i < 4; i++) {
-                    list.push('/DATANFT/' + i);
-                }
-                arController.loadNFTMarkers(list, function (markerIds) {
-                    log('NFT Marker Count', markerIds.length);
-                });
-
-                var rotationV = 0;
-                var rotationTarget = 0;
-
-                var tick = function () {
-                    arController.process();
-                    if (renderer) {
-                        renderer.render(scene, camera);
-                        rotationV += (rotationTarget - cube.rotation.z) * 0.05;
-                        cube.rotation.z += rotationV;
-                        rotationV *= 0.8;
-                    }
-                    requestAnimationFrame(tick);
-                };
-
-                tick();
-            };
-        }
-
-        function log(type, code) {
-            var message = type + " : " + code;
-            console.log(message);
-            document.getElementById('message').innerText = message;
-        }
-
-        function getMarker(ev) {
-            if (ev.data.type === artoolkit.PATTERN_MARKER) {
-                log("PATTERN:", ev.data.marker.idPatt);
-            } else if (ev.data.type === artoolkit.BARCODE_MARKER) {
-                log("BARCODE", ev.data.marker.idMatrix);
-            }
-            else if (ev.data.type == artoolkit.NFT_MARKER) {
-                log("NFT", ev.data.marker.id);
-            }
-
-            if (ev.data.type === artoolkit.BARCODE_MARKER) {
-                setProjectionMatrix(cube.matrix, ev.data.matrixGL_RH);
-            }
-        }
-
-
         function setProjectionMatrix(projectionMatrix, value) {
             if (typeof projectionMatrix.elements.set === "function") {
                 projectionMatrix.elements.set(value);
@@ -173,30 +90,295 @@
         };
     </script>
     <script>
-        navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-
         var hdConstraints = {
             audio: false,
             video: {
                 width: { ideal: 640 },
                 height: { ideal: 480 },
+                facingMode: "environment"
             }
         };
-
-        if (isMobile()) {
-            hdConstraints.video.facingMode = { "exact": "environment" };
-        }
-        else {
-            document.body.className = "desktop";
-        }
-
-        if (navigator.getUserMedia) {
-            navigator.getUserMedia(hdConstraints, success, errorCallback);
-        } else {
-            errorCallback('');
+        var arController = null;
+        var camera = null;
+        var renderer = null;
+        var model = null;
+    </script>
+    <script>
+        function getUserMediaSuccessCallback(stream) {
+            video.srcObject = stream;
+            video.onloadedmetadata = function (e) {
+                video.width = e.srcElement.videoWidth;
+                video.height = e.srcElement.videoHeight;
+                window.onresize = function (e) {
+                    resize();
+                }
+                resize();
+                log('loading...');
+            };
+            video.play().then(function () {
+                log('video play');
+                var profile = "/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat";
+                var cameraParam = new ARCameraParam(profile);
+                cameraParam.onload = ARCameraParamOnLoad;
+            });
         }
     </script>
+    <script>
+        function resize() {
+            var screenWidth = window.innerWidth;
+            var screenHeight = window.innerHeight;
+            var videoWidth = video.width;
+            var videoHeight = video.height;
+            if (!isMobile()) {
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {
+                    canvas.width = videoWidth / videoHeight * screenHeight;
+                }
+                else {
+                    canvas.height = videoHeight / videoWidth * screenWidth;
+                }
+            }
+            else {
+                if (screenWidth / screenHeight > videoWidth / videoHeight) {//进入横屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.width = videoWidth / videoHeight * screenHeight;
+                    }
+                    else {//竖屏开始
+                        canvas.width = videoHeight / videoWidth * screenHeight;
+                    }
+                }
+                else {//进入竖屏
+                    if (videoWidth > videoHeight) {//横屏开始
+                        canvas.height = videoWidth / videoHeight * screenWidth;
+                    }
+                    else {//竖屏开始
+                        canvas.height = videoHeight / videoWidth * screenWidth;
+                    }
+                }
+            }
+            if (screenWidth / screenHeight > videoWidth / videoHeight) {
+                canvas.height = screenHeight;
+                canvas.style.width = canvas.width + 'px';
+                canvas.style.height = canvas.height + 'px';
+                canvas.style.top = 0;
+                canvas.style.left = (screenWidth - canvas.clientWidth) / 2 + 'px';
+            }
+            else {
+                canvas.width = screenWidth;
+                canvas.style.width = canvas.width + 'px';
+                canvas.style.height = canvas.height + 'px';
+                canvas.style.top = (screenHeight - canvas.clientHeight) / 2 + 'px';
+                canvas.style.left = 0;
+            }
+            orientationchange(arController);
+        }
+    </script>
+    <script>
+        function orientationchange(arController) {
+            var cls = window.orientation === 0 ? "portrait" : "landscape";
+            document.body.className = cls;
+            if (arController) {
+                arController.orientation = cls;
+                arController.videoWidth = window.orientation === 0 ? video.height : video.width;
+                arController.videoHeight = window.orientation === 0 ? video.width : video.height;
+            }
+            if (renderer) {
+                var width = window.orientation === 0 ? canvas.height : canvas.width;
+                var height = window.orientation === 0 ? canvas.width : canvas.height;
+                renderer.setSize(width, height);
+            }
+        }
+    </script>
+    <script>
+        function ARCameraParamOnLoad() {
+            var arCameraParam = this;
+            var maxSize = 320;
+            var f = maxSize / Math.max(video.videoWidth, video.videoHeight);
+            var w = f * video.videoWidth;
+            var h = f * video.videoHeight;
+            if (video.videoWidth < video.videoHeight) {
+                var tmp = w;
+                w = h;
+                h = tmp;
+            }
+            log('start create arcontroller:' + w + 'x' + h + '@' + arCameraParam);
+            arController = new ARController(w, h, arCameraParam);
+            log('arcontroller created');
+            arController.image = video;
 
+            arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
+            arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+
+
+            orientationchange(arController);
+            log('start threejs');
+            threeJsStart();
+            arControllerSetup(arController);
+
+            setProjectionMatrix(camera.projectionMatrix, arController.getCameraMatrix());
+            var w = canvas.width;
+            var h = canvas.height;
+            if (window.orientation === 0) {
+                renderer.setSize(h, w);
+            } else {
+                renderer.setSize(w, h);
+            }
+            log('start artoolkit');
+            var tick = function () {
+                arController.process(video);
+                requestAnimationFrame(tick);
+            };
+            tick();
+        }
+        function threeJsStart() {
+            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            renderer.setClearColor(0x000000, 0);
+            var scene = new THREE.Scene();
+            camera = new THREE.PerspectiveCamera(75, video.width / video.height, 0.1, 50);
+            camera.position.z = 3;
+            camera.matrixAutoUpdate = false;
+
+            var light = new THREE.PointLight(0xffffff);
+            light.position.set(400, 500, 100);
+            scene.add(light);
+            scene.add(camera);
+            var markerRoot = new THREE.Object3D();
+            model = markerRoot;
+            markerRoot.matrixAutoUpdate = false;
+
+            var mesh = new THREE.Mesh(
+                new THREE.TorusGeometry(0.3, 0.2, 8, 8),
+                new THREE.MeshNormalMaterial()
+            );
+            mesh.material.shading = THREE.FlatShading;
+            mesh.position.z = 0.5;
+            mesh.rotation.x = Math.PI / 2;
+
+            markerRoot.add(mesh);
+            scene.add(markerRoot);
+            var animation = function (time) {
+                renderer.render(scene, camera);
+            }
+            renderer.setAnimationLoop(animation);
+        }
+    </script>
+    <script>
+        function getModel(ev) {
+            return model;
+        }
+        function arControllerSetup(arController) {
+
+            arController.addEventListener('getMarker', function (ev) {
+                var marker = ev.data.marker;
+                var obj;
+                if (ev.data.type === artoolkit.PATTERN_MARKER) {
+                    log(ev.data.marker.idPatt);
+
+                } else if (ev.data.type === artoolkit.BARCODE_MARKER) {
+                    log(ev.data.marker.idMatrix);
+                }
+                if (ev.data.type >= 0) {
+                    obj = getModel(ev);
+                    setProjectionMatrix(obj.matrix, ev.data.matrixGL_RH);
+                    obj.visible = true;
+                }
+                // else {
+                //     obj = getModel(ev);
+                //     obj.visible = false;
+                // }
+            });
+
+            arController.addEventListener('getNFTMarker', function (ev) {
+                var marker = ev.data.marker;
+                var obj;
+                console.log('Found NFT marker', marker, obj);
+                obj = this.threeNFTMarkers[marker.id];
+                if (obj) {
+                    obj.matrix.fromArray(ev.data.matrixGL_RH);
+                    obj.visible = true;
+                }
+            });
+
+            arController.addEventListener('lostNFTMarker', function (ev) {
+                var marker = ev.data.marker;
+                var obj;
+                console.log('Lost NFT marker', marker, obj);
+                obj = this.threeNFTMarkers[marker.id];
+                if (obj) {
+                    obj.matrix.fromArray(ev.data.matrixGL_RH);
+                    // TODO make it maybe more stable, making the object not visible only after some ms of lost tracking?
+                    obj.visible = false;
+                }
+            });
+
+            arController.addEventListener('getMultiMarker', function (ev) {
+                var obj = this.threeMultiMarkers[ev.data.multiMarkerId];
+                if (obj) {
+                    obj.matrix.fromArray(ev.data.matrixGL_RH);
+                    obj.visible = true;
+                }
+            });
+
+            arController.addEventListener('getMultiMarkerSub', function (ev) {
+                var marker = ev.data.multiMarkerId;
+                var subMarkerID = ev.data.markerIndex;
+                var subMarker = ev.data.marker;
+                var obj = this.threeMultiMarkers[marker];
+                if (obj && obj.markers && obj.markers[subMarkerID]) {
+                    var sub = obj.markers[subMarkerID];
+                    sub.matrix.fromArray(ev.data.matrixGL_RH);
+                    sub.visible = (subMarker.visible >= 0);
+                }
+            });
+
+            arController.threePatternMarkers = {};
+            arController.threeNFTMarkers = {};
+            arController.threeBarcodeMarkers = {};
+            arController.threeMultiMarkers = {};
+
+            loadMarker(arController);
+
+            for (var i in arController.threePatternMarkers) {
+                arController.threePatternMarkers[i].visible = false;
+            }
+            for (var i in arController.threeNFTMarkers) {
+                arController.threeNFTMarkers[i].visible = false;
+            }
+            for (var i in arController.threeBarcodeMarkers) {
+                arController.threeBarcodeMarkers[i].visible = false;
+            }
+            for (var i in arController.threeMultiMarkers) {
+                arController.threeMultiMarkers[i].visible = false;
+                for (var j = 0; j < arController.threeMultiMarkers[i].markers.length; j++) {
+                    if (arController.threeMultiMarkers[i].markers[j]) {
+                        arController.threeMultiMarkers[i].markers[j].visible = false;
+                    }
+                }
+            }
+        }
+    </script>
+    <script>
+        function loadMarker(arController) {
+            arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
+            });
+        }
+    </script>
+    <script>
+        function start() {
+            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+            if (navigator.getUserMedia) {
+                navigator.getUserMedia(hdConstraints, getUserMediaSuccessCallback, function () {
+                    console.error('getUserMediaErrorCallback')
+                });
+            } else {
+                console.error('getUserMedia');
+            }
+        }
+    </script>
+    <script>
+        var video = document.getElementById('video');
+        var canvas = document.getElementById('canvas');
+        window.addEventListener('artoolkit-loaded', () => start());
+    </script>
 </body>
 
 </html>

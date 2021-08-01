@@ -39,10 +39,13 @@
         #message {
             box-sizing: border-box;
             display: inline-block;
+            height: 2em;
             line-height: 2em;
             font-size: 1.5em;
             font-weight: bold;
             background: #fff;
+            white-space: nowrap;
+            overflow: hidden;
             position: absolute;
             top: 0;
             left: 0;
@@ -51,13 +54,13 @@
         }
 
         .landscape #message {
-
             width: 100vh;
             transform: rotate(-90deg) translate(calc(-50vh + 1em), calc(-50vh + 1em));
         }
 
         .portrait #message {
             width: 100%;
+            transform: none;
         }
     </style>
     <title>隐藏canvas，显示video</title>
@@ -74,62 +77,95 @@
     <script src="/examples/js/third_party/three.js/three.min.js"></script>
     <script src="/js/artoolkit.three.js"></script>
     <script>
-        function isMobile() {
+        function WebAR(video, canvas, message, config, debug) {
+            this.debug = debug || false;
+            this.video = video;
+            this.canvas = canvas;
+            this.message = message;
+            this.config = {
+                cameraParam: "/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat",
+                maxARVideoSize: 640,
+                width: 640,
+                height: 480,
+                facingMode: "environment"
+            };
+            for (const key in config) {
+                if (this.config.hasOwnProperty(key)) {
+                    this.config[key] = config[key];
+                }
+            }
+        }
+        //version
+        WebAR.version = ".01";
+        //log
+        WebAR.prototype.log = function (msg) {
+            if (this.debug) {
+                if (this.message && msg) {
+                    this.message.innerText = msg;
+                }
+                else {
+                    console.log(msg);
+                }
+            }
+        }
+        //isMobile
+        WebAR.prototype.isMobile = function () {
             return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
         }
-        function log(msg) {
-            console.log(msg);
-            document.getElementById('message').innerText = msg;
-        }
-        function setProjectionMatrix(projectionMatrix, value) {
+        //setProjectionMatrix
+        WebAR.prototype.setProjectionMatrix = function (projectionMatrix, value) {
             if (typeof projectionMatrix.elements.set === "function") {
                 projectionMatrix.elements.set(value);
             } else {
                 projectionMatrix.elements = [].slice.call(value);
             }
         };
-    </script>
-    <script>
-        var hdConstraints = {
-            audio: false,
-            video: {
-                width: { ideal: 640 },
-                height: { ideal: 480 },
-                facingMode: "environment"
-            }
-        };
-        var arController = null;
-        var camera = null;
-        var renderer = null;
-        var model = null;
-    </script>
-    <script>
-        function getUserMediaSuccessCallback(stream) {
-            video.srcObject = stream;
-            video.onloadedmetadata = function (e) {
-                video.width = e.srcElement.videoWidth;
-                video.height = e.srcElement.videoHeight;
-                window.onresize = function (e) {
-                    resize();
+        //start
+        WebAR.prototype.start = function () {
+            var hdConstraints = {
+                audio: false,
+                video: {
+                    width: { ideal: this.config.width },
+                    height: { ideal: this.config.height },
+                    facingMode: this.config.facingMode
                 }
-                resize();
-                log('loading...');
             };
-            video.play().then(function () {
-                log('video play');
-                var profile = "/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat";
-                var cameraParam = new ARCameraParam(profile);
-                cameraParam.onload = ARCameraParamOnLoad;
-            });
+            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
+            if (navigator.getUserMedia) {
+                var parent = this;
+                navigator.getUserMedia(hdConstraints, function (stream) {
+                    video.srcObject = stream;
+                    video.addEventListener("loadedmetadata", function (e) {
+                        video.width = e.srcElement.videoWidth;
+                        video.height = e.srcElement.videoHeight;
+                        window.addEventListener("resize", function () {
+                            parent.resize();
+                        });
+                        parent.resize();
+                        video.play().then(function () {
+                            parent.log('video play');
+                            var cameraParam = new ARCameraParam(parent.config.cameraParam);
+                            cameraParam.onload = function () {
+                                parent.ARCameraParamOnLoad(cameraParam);
+                            };
+                        });
+                    });
+                }, function () {
+                    console.error('getUserMediaErrorCallback')
+                });
+            } else {
+                console.error('getUserMedia');
+            }
         }
-    </script>
-    <script>
-        function resize() {
+        //resize
+        WebAR.prototype.resize = function () {
+            var video = this.video;
+            var canvas = this.canvas;
             var screenWidth = window.innerWidth;
             var screenHeight = window.innerHeight;
             var videoWidth = video.width;
             var videoHeight = video.height;
-            if (!isMobile()) {
+            if (!this.isMobile()) {
                 if (screenWidth / screenHeight > videoWidth / videoHeight) {
                     canvas.width = videoWidth / videoHeight * screenHeight;
                 }
@@ -169,28 +205,24 @@
                 canvas.style.top = (screenHeight - canvas.clientHeight) / 2 + 'px';
                 canvas.style.left = 0;
             }
-            orientationchange(arController);
+            this.orientationchange();
         }
-    </script>
-    <script>
-        function orientationchange(arController) {
+        WebAR.prototype.orientationchange = function () {
             var cls = window.orientation === 0 ? "portrait" : "landscape";
             document.body.className = cls;
-            if (arController) {
-                arController.orientation = cls;
-                arController.videoWidth = window.orientation === 0 ? video.height : video.width;
-                arController.videoHeight = window.orientation === 0 ? video.width : video.height;
+            if (this.arController) {
+                this.arController.orientation = cls;
+                this.arController.videoWidth = window.orientation === 0 ? video.height : video.width;
+                this.arController.videoHeight = window.orientation === 0 ? video.width : video.height;
             }
-            if (renderer) {
+            if (this.renderer) {
                 var width = window.orientation === 0 ? canvas.height : canvas.width;
                 var height = window.orientation === 0 ? canvas.width : canvas.height;
-                renderer.setSize(width, height);
+                this.renderer.setSize(width, height);
             }
         }
-    </script>
-    <script>
-        function ARCameraParamOnLoad() {
-            var arCameraParam = this;
+        WebAR.prototype.ARCameraParamOnLoad = function (arCameraParam) {
+            var log = this.log;
             var maxSize = 320;
             var f = maxSize / Math.max(video.videoWidth, video.videoHeight);
             var w = f * video.videoWidth;
@@ -200,37 +232,37 @@
                 w = h;
                 h = tmp;
             }
-            log('start create arcontroller:' + w + 'x' + h + '@' + arCameraParam);
-            arController = new ARController(w, h, arCameraParam);
+            var arController = new ARController(w, h, arCameraParam);
             log('arcontroller created');
             arController.image = video;
-            
+
             arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
             arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
 
-
-            orientationchange(arController);
+            this.arController = arController;
+            this.orientationchange();
             log('start threejs');
-            threeJsStart();
-            arControllerSetup(arController);
+            this.threeJsStart();
+            this.arControllerSetup();
 
-            setProjectionMatrix(camera.projectionMatrix, arController.getCameraMatrix());
+            this.setProjectionMatrix(camera.projectionMatrix, this.arController.getCameraMatrix());
             var w = canvas.width;
             var h = canvas.height;
             if (window.orientation === 0) {
-                renderer.setSize(h, w);
+                this.renderer.setSize(h, w);
             } else {
-                renderer.setSize(w, h);
+                this.renderer.setSize(w, h);
             }
             log('start artoolkit');
             var tick = function () {
-                arController.process(video);
+                arController.process(this.video);
                 requestAnimationFrame(tick);
             };
             tick();
         }
-        function threeJsStart() {
-            renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+        WebAR.prototype.threeJsStart = function () {
+            var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            this.renderer = renderer;
             renderer.setClearColor(0x000000, 0);
             var scene = new THREE.Scene();
             camera = new THREE.PerspectiveCamera(75, video.width / video.height, 0.1, 50);
@@ -242,7 +274,6 @@
             scene.add(light);
             scene.add(camera);
             var markerRoot = new THREE.Object3D();
-            model = markerRoot;
             markerRoot.matrixAutoUpdate = false;
 
             var mesh = new THREE.Mesh(
@@ -255,18 +286,16 @@
 
             markerRoot.add(mesh);
             scene.add(markerRoot);
+            this.model = markerRoot;
             var animation = function (time) {
                 renderer.render(scene, camera);
             }
             renderer.setAnimationLoop(animation);
         }
-    </script>
-    <script>
-        function getModel(ev) {
-            return model;
-        }
-        function arControllerSetup(arController) {
-
+        WebAR.prototype.arControllerSetup = function () {
+            var parent = this;
+            var arController = this.arController;
+            var log = this.log;
             arController.addEventListener('getMarker', function (ev) {
                 var marker = ev.data.marker;
                 var obj;
@@ -277,14 +306,14 @@
                     log(ev.data.marker.idMatrix);
                 }
                 if (ev.data.type >= 0) {
-                    obj = getModel(ev);
-                    setProjectionMatrix(obj.matrix, ev.data.matrixGL_RH);
+                    obj = parent.getModel(ev);
+                    parent.setProjectionMatrix(obj.matrix, ev.data.matrixGL_RH);
                     obj.visible = true;
                 }
-                // else {
-                //     obj = getModel(ev);
-                //     obj.visible = false;
-                // }
+                else {
+                    obj = parent.getModel(ev);
+                    obj.visible = false;
+                }
             });
 
             arController.addEventListener('getNFTMarker', function (ev) {
@@ -335,7 +364,7 @@
             arController.threeBarcodeMarkers = {};
             arController.threeMultiMarkers = {};
 
-            loadMarker(arController);
+            this.loadMarker(arController);
 
             for (var i in arController.threePatternMarkers) {
                 arController.threePatternMarkers[i].visible = false;
@@ -355,29 +384,23 @@
                 }
             }
         }
-    </script>
-    <script>
-        function loadMarker(arController) {
-            arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
+        WebAR.prototype.loadMarker = function () {
+            this.arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
             });
         }
+
     </script>
     <script>
-        function start() {
-            navigator.getUserMedia = navigator.getUserMedia || navigator.webkitGetUserMedia || navigator.mozGetUserMedia || navigator.msGetUserMedia;
-            if (navigator.getUserMedia) {
-                navigator.getUserMedia(hdConstraints, getUserMediaSuccessCallback, function () {
-                    console.error('getUserMediaErrorCallback')
-                });
-            } else {
-                console.error('getUserMedia');
-            }
-        }
-    </script>
-    <script>
-        var video = document.getElementById('video');
-        var canvas = document.getElementById('canvas');
-        window.addEventListener('artoolkit-loaded', () => start());
+        window.addEventListener('artoolkit-loaded', () => {
+            var config = {
+                maxARVideoSize: 320
+            };
+            var webAR = new WebAR(document.getElementById('video'), document.getElementById('canvas'), document.getElementById('message'), config, true);
+            webAR.getModel = function (ev) {
+                return this.model;
+            };
+            webAR.start();
+        });
     </script>
 </body>
 
