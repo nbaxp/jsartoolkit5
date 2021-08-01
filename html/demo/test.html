@@ -37,16 +37,27 @@
         }
 
         #message {
+            box-sizing: border-box;
+            display: inline-block;
+            line-height: 2em;
             font-size: 1.5em;
             font-weight: bold;
-            padding: 1em;
             background: #fff;
             position: absolute;
-            width: 100%;
-            height: 5em;
-            top: 5em;
+            top: 0;
+            left: 0;
             opacity: .5;
             color: red;
+        }
+
+        .landscape #message {
+
+            width: 100vh;
+            transform: rotate(-90deg) translate(calc(-50vh + 1em), calc(-50vh + 1em));
+        }
+
+        .portrait #message {
+            width: 100%;
         }
     </style>
     <title>隐藏canvas，显示video</title>
@@ -55,7 +66,7 @@
 <body>
     <video id='video'></video>
     <canvas id='canvas'></canvas>
-    <div id="message">loading...</div>
+    <div id="message"></div>
     <script type='text/javascript'>
         var artoolkit_wasm_url = '../build/artoolkit_wasm.wasm';
     </script>
@@ -66,8 +77,7 @@
         function isMobile() {
             return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
         }
-        function log(msg)
-        {
+        function log(msg) {
             console.log(msg);
             document.getElementById('message').innerText = msg;
         }
@@ -103,15 +113,13 @@
                     resize();
                 }
                 resize();
+                log('loading...');
             };
             video.play().then(function () {
                 log('video play');
                 var profile = "/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat";
                 var cameraParam = new ARCameraParam(profile);
-                cameraParam.onload = function () {
-                    log('load arcamera');
-                    ARCameraParamOnLoad(cameraParam);
-                }
+                cameraParam.onload = ARCameraParamOnLoad;
             });
         }
     </script>
@@ -181,7 +189,8 @@
         }
     </script>
     <script>
-        function ARCameraParamOnLoad(arCameraParam) {
+        function ARCameraParamOnLoad() {
+            var arCameraParam = this;
             var maxSize = 320;
             var f = maxSize / Math.max(video.videoWidth, video.videoHeight);
             var w = f * video.videoWidth;
@@ -191,13 +200,13 @@
                 w = h;
                 h = tmp;
             }
-            log('start create arcontroller:'+w+'x'+h+'@'+arCameraParam);
+            log('start create arcontroller:' + w + 'x' + h + '@' + arCameraParam);
             arController = new ARController(w, h, arCameraParam);
             log('arcontroller created');
             arController.image = video;
             // arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
             // arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
-            
+
 
             orientationchange(arController);
             log('start threejs');
@@ -367,7 +376,7 @@
     <script>
         var video = document.getElementById('video');
         var canvas = document.getElementById('canvas');
-        window.addEventListener('artoolkit-loaded',()=>start());
+        window.addEventListener('artoolkit-loaded', () => start());
     </script>
 </body>
 
