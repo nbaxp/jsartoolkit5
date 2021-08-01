@@ -204,8 +204,9 @@
             arController = new ARController(w, h, arCameraParam);
             log('arcontroller created');
             arController.image = video;
-            // arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
-            // arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+            
+            arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
+            arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
 
 
             orientationchange(arController);
