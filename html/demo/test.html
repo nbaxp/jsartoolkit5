@@ -1,7 +1,10 @@
 <html>
 
 <head>
+    <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, minimum-scale=1, maximum-scale=1">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge,chrome=1" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
     <style>
         html,
         body {
@@ -60,15 +63,14 @@
 
         .portrait #message {
             width: 100%;
-            transform: none;
         }
     </style>
     <title>隐藏canvas，显示video</title>
 </head>
 
 <body>
-    <video id='video'></video>
-    <canvas id='canvas'></canvas>
+    <video id='webcamVideo'></video>
+    <canvas id='sceneCanvas'></canvas>
     <div id="message"></div>
     <script type='text/javascript'>
         var artoolkit_wasm_url = '../build/artoolkit_wasm.wasm';
@@ -134,15 +136,15 @@
             if (navigator.getUserMedia) {
                 var parent = this;
                 navigator.getUserMedia(hdConstraints, function (stream) {
-                    video.srcObject = stream;
-                    video.addEventListener("loadedmetadata", function (e) {
-                        video.width = e.srcElement.videoWidth;
-                        video.height = e.srcElement.videoHeight;
+                    parent.video.srcObject = stream;
+                    parent.video.addEventListener("loadedmetadata", function (e) {
+                        parent.video.width = e.srcElement.videoWidth;
+                        parent.video.height = e.srcElement.videoHeight;
                         window.addEventListener("resize", function () {
                             parent.resize();
                         });
                         parent.resize();
-                        video.play().then(function () {
+                        parent.video.play().then(function () {
                             parent.log('video play');
                             var cameraParam = new ARCameraParam(parent.config.cameraParam);
                             cameraParam.onload = function () {
@@ -212,32 +214,32 @@
             document.body.className = cls;
             if (this.arController) {
                 this.arController.orientation = cls;
-                this.arController.videoWidth = window.orientation === 0 ? video.height : video.width;
-                this.arController.videoHeight = window.orientation === 0 ? video.width : video.height;
+                this.arController.videoWidth = window.orientation === 0 ? this.video.height : this.video.width;
+                this.arController.videoHeight = window.orientation === 0 ? this.video.width : this.video.height;
             }
             if (this.renderer) {
-                var width = window.orientation === 0 ? canvas.height : canvas.width;
-                var height = window.orientation === 0 ? canvas.width : canvas.height;
+                var width = window.orientation === 0 ? this.canvas.height : this.canvas.width;
+                var height = window.orientation === 0 ? this.canvas.width : this.canvas.height;
                 this.renderer.setSize(width, height);
             }
         }
         WebAR.prototype.ARCameraParamOnLoad = function (arCameraParam) {
             var log = this.log;
             var maxSize = 320;
-            var f = maxSize / Math.max(video.videoWidth, video.videoHeight);
-            var w = f * video.videoWidth;
-            var h = f * video.videoHeight;
-            if (video.videoWidth < video.videoHeight) {
+            var f = maxSize / Math.max(this.video.videoWidth, this.video.videoHeight);
+            var w = f * this.video.videoWidth;
+            var h = f * this.video.videoHeight;
+            if (this.video.videoWidth < this.video.videoHeight) {
                 var tmp = w;
                 w = h;
                 h = tmp;
             }
             var arController = new ARController(w, h, arCameraParam);
             log('arcontroller created');
-            arController.image = video;
+            arController.image = this.video;
 
-            arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
-            arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+            // arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
+            // arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
 
             this.arController = arController;
             this.orientationchange();
@@ -246,8 +248,8 @@
             this.arControllerSetup();
 
             this.setProjectionMatrix(camera.projectionMatrix, this.arController.getCameraMatrix());
-            var w = canvas.width;
-            var h = canvas.height;
+            var w = this.canvas.width;
+            var h = this.canvas.height;
             if (window.orientation === 0) {
                 this.renderer.setSize(h, w);
             } else {
@@ -261,11 +263,11 @@
             tick();
         }
         WebAR.prototype.threeJsStart = function () {
-            var renderer = new THREE.WebGLRenderer({ canvas: canvas, antialias: true, alpha: true });
+            var renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
             this.renderer = renderer;
             renderer.setClearColor(0x000000, 0);
             var scene = new THREE.Scene();
-            camera = new THREE.PerspectiveCamera(75, video.width / video.height, 0.1, 50);
+            camera = new THREE.PerspectiveCamera(75, this.video.width / this.video.height, 0.1, 50);
             camera.position.z = 3;
             camera.matrixAutoUpdate = false;
 
@@ -364,7 +366,7 @@
             arController.threeBarcodeMarkers = {};
             arController.threeMultiMarkers = {};
 
-            this.loadMarker(arController);
+            this.loadMarker();
 
             for (var i in arController.threePatternMarkers) {
                 arController.threePatternMarkers[i].visible = false;
@@ -384,18 +386,19 @@
                 }
             }
         }
-        WebAR.prototype.loadMarker = function () {
-            this.arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
-            });
-        }
-
     </script>
     <script>
         window.addEventListener('artoolkit-loaded', () => {
             var config = {
                 maxARVideoSize: 320
             };
-            var webAR = new WebAR(document.getElementById('video'), document.getElementById('canvas'), document.getElementById('message'), config, true);
+            var webAR = new WebAR(document.getElementById('webcamVideo'), document.getElementById('sceneCanvas'), document.getElementById('message'), config, true);
+            webAR.loadMarker = function () {
+                this.arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
+                this.arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+                this.arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
+                });
+            };
             webAR.getModel = function (ev) {
                 return this.model;
             };
