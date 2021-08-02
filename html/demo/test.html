@@ -302,6 +302,7 @@
                 logarithmicDepthBuffer: true
             });
             this.renderer = renderer;
+            renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setClearColor(0x000000, 0);
             var scene = new THREE.Scene();
             var camera = new THREE.PerspectiveCamera(45, this.video.width / this.video.height, 0.1, 10000);
@@ -329,6 +330,7 @@
                 mesh.material.flatShading = THREE.FlatShading;
                 mesh.position.z = 0.5;
                 mesh.rotation.x = Math.PI / 2;
+                // mesh.scale.set(10,10,10);
                 markerRoot.add(mesh);
             }
 
@@ -341,49 +343,49 @@
                     markerRoot.add(gltfScene);
                     gltfScene.updateMatrixWorld();
 
-                    // const box = new THREE.Box3().setFromObject(gltfScene);
-                    // const size = box.getSize(new THREE.Vector3()).length();
-                    // const center = box.getCenter(new THREE.Vector3());
-                    // gltfScene.position.x += (gltfScene.position.x - center.x);
-                    // gltfScene.position.y += (gltfScene.position.y - center.y);
-                    // gltfScene.position.z += (gltfScene.position.z - center.z);
-                    // //controls.maxDistance = size * 10;
-                    // var camera = camera2;
-                    // camera.near = size / 100;
-                    // camera.far = size * 100;
-                    // camera.updateProjectionMatrix();
-                    // camera.position.copy(center);
-                    // camera.position.x += size / 2.0;
-                    // camera.position.y += size / 5.0;
-                    // camera.position.z += size / 2.0;
-                    // camera.lookAt(center);
-                    // //
-                    // //
-                    // var modelBox3 = box;
-                    // var meshBox3 = new THREE.Box3();
-                    // modelBox3.expandByObject(gltfScene);
-                    // var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
-                    // gltfScene.traverse(function (value) {
-                    //     if (value.isMesh) {
-                    //         value.castShadow = true;
-                    //         value.receiveShadow = true;
-                    //         meshBox3.setFromObject(value);
-                    //         var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
-                    //         if (isNaN(worldPs.x)) return;
-                    //         value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
-                    //         value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
-                    //     }
-                    // });
+                    const box = new THREE.Box3().setFromObject(gltfScene);
+                    const size = box.getSize(new THREE.Vector3()).length();
+                    const center = box.getCenter(new THREE.Vector3());
+                    gltfScene.position.x += (gltfScene.position.x - center.x);
+                    gltfScene.position.y += (gltfScene.position.y - center.y);
+                    gltfScene.position.z += (gltfScene.position.z - center.z);
+                    //controls.maxDistance = size * 10;
+                    var camera = camera2;
+                    camera.near = size / 100;
+                    camera.far = size * 100;
+                    camera.updateProjectionMatrix();
+                    camera.position.copy(center);
+                    camera.position.x += size / 2.0;
+                    camera.position.y += size / 5.0;
+                    camera.position.z += size / 2.0;
+                    camera.lookAt(center);
+                    //
+                    //
+                    var modelBox3 = box;
+                    var meshBox3 = new THREE.Box3();
+                    modelBox3.expandByObject(gltfScene);
+                    var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
+                    gltfScene.traverse(function (value) {
+                        if (value.isMesh) {
+                            value.castShadow = true;
+                            value.receiveShadow = true;
+                            meshBox3.setFromObject(value);
+                            var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
+                            if (isNaN(worldPs.x)) return;
+                            value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
+                            value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
+                        }
+                    });
                 });
             }
 
-            // setTimeout(() => {
-            //     loadMesh();
-            // }, 0);
-
             setTimeout(() => {
-                loadGltf();
+                loadMesh();
             }, 0);
+
+            // setTimeout(() => {
+            //     loadGltf();
+            // }, 0);
 
             ////=load test model end=////
 
@@ -452,12 +454,11 @@
         }
     </script>
     <script>
-        var webAR;
         window.addEventListener('artoolkit-loaded', () => {
             var config = {
                 maxARVideoSize: 320
             };
-            webAR = new WebAR(document.getElementById('webcamVideo'), document.getElementById('sceneCanvas'), document.getElementById('message'), config, true);
+            var webAR = new WebAR(document.getElementById('webcamVideo'), document.getElementById('sceneCanvas'), document.getElementById('message'), config, true);
             document.getElementById('following').addEventListener('change', function (e) {
                 console.log(e);
                 webAR.config.following = e.target.checked;
@@ -472,7 +473,11 @@
                 });
                 this.arController.loadMarker('Data/patt.9999', function (markerId) {
                 });
-                this.arController.loadNFTMarker('DataNFT/pinball', function (markerId) {
+                var list = [];
+                for (var i = 1; i < 6; i++) {
+                    list.push('DATANFT/' + i);
+                }
+                this.arController.loadNFTMarkers(list, function (markerIds) {
                 });
             };
             webAR.loadModel = function (event) {
