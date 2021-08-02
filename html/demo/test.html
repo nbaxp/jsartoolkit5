@@ -294,15 +294,14 @@
         WebAR.prototype.arControllerSetup = function () {
             var parent = this;
             var arController = this.arController;
-            var log = this.log;
             arController.addEventListener('getMarker', function (ev) {
                 var marker = ev.data.marker;
                 var obj;
                 if (ev.data.type === artoolkit.PATTERN_MARKER) {
-                    log(ev.data.marker.idPatt);
+                    parent.log(ev.data.marker.idPatt);
 
                 } else if (ev.data.type === artoolkit.BARCODE_MARKER) {
-                    log(ev.data.marker.idMatrix);
+                    parent.log(ev.data.marker.idMatrix);
                 }
                 if (ev.data.type >= 0) {
                     obj = parent.getModel(ev);
@@ -318,7 +317,7 @@
             arController.addEventListener('getNFTMarker', function (ev) {
                 var marker = ev.data.marker;
                 var obj;
-                console.log('Found NFT marker', marker, obj);
+                parent.log('Found NFT marker', marker, obj);
                 obj = this.threeNFTMarkers[marker.id];
                 if (obj) {
                     obj.matrix.fromArray(ev.data.matrixGL_RH);
@@ -329,7 +328,7 @@
             arController.addEventListener('lostNFTMarker', function (ev) {
                 var marker = ev.data.marker;
                 var obj;
-                console.log('Lost NFT marker', marker, obj);
+                parent.log('Lost NFT marker', marker, obj);
                 obj = this.threeNFTMarkers[marker.id];
                 if (obj) {
                     obj.matrix.fromArray(ev.data.matrixGL_RH);
