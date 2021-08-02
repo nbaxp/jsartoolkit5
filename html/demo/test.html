@@ -146,10 +146,11 @@
                         parent.resize();
                         parent.video.play().then(function () {
                             if (window.artoolkit) {
-                                var cameraParam = new ARCameraParam(parent.config.cameraParam);
-                                cameraParam.onload = function () {
+                                var cameraParam = new ARCameraParam(parent.config.cameraParam, function () {
                                     parent.ARCameraParamOnLoad(cameraParam);
-                                };
+                                }, function () {
+                                    parent.log('ARCameraParamOnLoad error');
+                                });
                             }
                         });
                     });
@@ -279,7 +280,7 @@
                 new THREE.TorusGeometry(0.3, 0.2, 8, 8),
                 new THREE.MeshNormalMaterial()
             );
-            mesh.material.shading = THREE.FlatShading;
+            mesh.material.flatShading = THREE.FlatShading;
             mesh.position.z = 0.5;
             mesh.rotation.x = Math.PI / 2;
             markerRoot.add(mesh);
@@ -307,6 +308,7 @@
                     obj = parent.getModel(ev);
                     parent.setProjectionMatrix(obj.matrix, ev.data.matrixGL_RH);
                     obj.visible = true;
+                    //parent.renderer.setClearColor(0xd3df56, 1); 
                 }
                 else {
                     obj = parent.getModel(ev);
