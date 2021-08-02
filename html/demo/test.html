@@ -76,7 +76,7 @@
             white-space: nowrap;
             overflow: hidden;
             position: absolute;
-            top: 0;
+            bottom: 0;
             right: 0;
             opacity: .5;
             color: green;
@@ -84,7 +84,7 @@
 
         .landscape #tools {
             width: 100vh;
-            transform: rotate(90deg) translate(calc(50vh - 1em), calc(-50vh + 1em));
+            transform: rotate(90deg) translate(calc(-50vh + 1em), calc(-50vh + 1em));
         }
 
         .portrait #tools {
@@ -291,7 +291,13 @@
             tick();
         }
         WebAR.prototype.threeJsStart = function () {
-            var renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: true, alpha: true });
+            var renderer = new THREE.WebGLRenderer({
+                canvas: this.canvas,
+                antialias: true,
+                alpha: true,
+                autoClear: true,
+                logarithmicDepthBuffer: true
+            });
             this.renderer = renderer;
             renderer.setClearColor(0x000000, 0);
             var scene = new THREE.Scene();
@@ -303,6 +309,7 @@
             light.position.set(400, 500, 100);
             scene.add(light);
             scene.add(camera);
+
             var markerRoot = new THREE.Object3D();
             markerRoot.matrixAutoUpdate = false;
 
@@ -468,7 +475,6 @@
                     event.data.marker.idMatrix +
                     (event.data.type === 2 ? event.data.maker.id : -1);
                 this.log(number);
-                
             };
             webAR.start();
         });
