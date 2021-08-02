@@ -71,13 +71,13 @@
 <body>
     <video id='webcamVideo'></video>
     <canvas id='sceneCanvas'></canvas>
-    <div id="message"></div>
+    <div id="message">loading</div>
     <script type='text/javascript'>
-        var artoolkit_wasm_url = '../build/artoolkit_wasm.wasm';
+        var artoolkit_wasm_url = 'build/artoolkit_wasm.wasm';
     </script>
-    <script src="/build/artoolkit_wasm.js"></script>
-    <script src="/examples/js/third_party/three.js/three.min.js"></script>
-    <script src="/js/artoolkit.three.js"></script>
+    <script src="build/artoolkit_wasm.js"></script>
+    <script src="three.js/three.min.js"></script>
+    <script src="js/artoolkit.three.js"></script>
     <script>
         function WebAR(video, canvas, message, config, debug) {
             this.debug = debug || false;
@@ -85,7 +85,7 @@
             this.canvas = canvas;
             this.message = message;
             this.config = {
-                cameraParam: "/examples/Data/camera_para-iPhone 5 rear 640x480 1.0m.dat",
+                cameraParam: "Data/camera_para-iPhone 5 rear 640x480 1.0m.dat",
                 maxARVideoSize: 640,
                 width: 640,
                 height: 480,
@@ -145,11 +145,12 @@
                         });
                         parent.resize();
                         parent.video.play().then(function () {
-                            parent.log('video play');
-                            var cameraParam = new ARCameraParam(parent.config.cameraParam);
-                            cameraParam.onload = function () {
-                                parent.ARCameraParamOnLoad(cameraParam);
-                            };
+                            if (window.artoolkit) {
+                                var cameraParam = new ARCameraParam(parent.config.cameraParam);
+                                cameraParam.onload = function () {
+                                    parent.ARCameraParamOnLoad(cameraParam);
+                                };
+                            }
                         });
                     });
                 }, function () {
@@ -224,7 +225,6 @@
             }
         }
         WebAR.prototype.ARCameraParamOnLoad = function (arCameraParam) {
-            var log = this.log;
             var maxSize = 320;
             var f = maxSize / Math.max(this.video.videoWidth, this.video.videoHeight);
             var w = f * this.video.videoWidth;
@@ -235,12 +235,12 @@
                 h = tmp;
             }
             var arController = new ARController(w, h, arCameraParam);
-            log('arcontroller created');
+            this.log('arcontroller created');
             arController.image = this.video;
 
             this.arController = arController;
             this.orientationchange();
-            log('start threejs');
+            this.log('start threejs');
             this.threeJsStart();
             this.arControllerSetup();
 
@@ -252,7 +252,7 @@
             } else {
                 this.renderer.setSize(w, h);
             }
-            log('start artoolkit');
+            this.log('start artoolkit');
             var tick = function () {
                 arController.process(this.video);
                 requestAnimationFrame(tick);
@@ -385,13 +385,6 @@
         }
     </script>
     <script>
-        var mesh = new THREE.Mesh(
-            new THREE.TorusGeometry(0.3, 0.2, 8, 8),
-            new THREE.MeshNormalMaterial()
-        );
-        mesh.material.shading = THREE.FlatShading;
-        mesh.position.z = 0.5;
-        mesh.rotation.x = Math.PI / 2;
         window.addEventListener('artoolkit-loaded', () => {
             var config = {
                 maxARVideoSize: 320
@@ -400,7 +393,7 @@
             webAR.loadMarker = function () {
                 this.arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
                 this.arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
-                this.arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
+                this.arController.loadMarker('Data/patt.kanji', function (markerId) {
                 });
             };
             webAR.getModel = function (ev) {
