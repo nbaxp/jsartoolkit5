@@ -64,6 +64,32 @@
         .portrait #message {
             width: 100%;
         }
+
+        #tools {
+            box-sizing: border-box;
+            display: inline-block;
+            height: 2em;
+            line-height: 2em;
+            font-size: 1.5em;
+            font-weight: bold;
+            background: #fff;
+            white-space: nowrap;
+            overflow: hidden;
+            position: absolute;
+            top: 0;
+            right: 0;
+            opacity: .5;
+            color: green;
+        }
+
+        .landscape #tools {
+            width: 100vh;
+            transform: rotate(90deg) translate(calc(50vh - 1em), calc(-50vh + 1em));
+        }
+
+        .portrait #tools {
+            width: 100%;
+        }
     </style>
     <title>隐藏canvas，显示video</title>
 </head>
@@ -72,6 +98,9 @@
     <video id='webcamVideo'></video>
     <canvas id='sceneCanvas'></canvas>
     <div id="message">loading</div>
+    <div id="tools">
+        <label>跟随模式:<input id="following" type="checkbox"></label>
+    </div>
     <script type='text/javascript'>
         var artoolkit_wasm_url = 'build/artoolkit_wasm.wasm';
     </script>
@@ -90,6 +119,7 @@
                 width: 640,
                 height: 480,
                 facingMode: "environment",
+                following: false,
             };
             for (const key in config) {
                 if (this.config.hasOwnProperty(key)) {
@@ -102,7 +132,7 @@
         //log
         WebAR.prototype.log = function (msg) {
             if (this.debug) {
-                if (this.message && msg) {
+                if (this.message) {
                     this.message.innerText = msg;
                 }
                 else {
@@ -296,76 +326,81 @@
             var parent = this;
             var arController = this.arController;
             arController.addEventListener('getMarker', function (ev) {
-                var markerType = ev.data.type;
-                var currentMarkerId;
-                var model;
-                if (markerType === artoolkit.PATTERN_MARKER) {
-                    currentMarkerId = ev.data.marker.idPatt;
-                    parent.log("Pattern:" + currentMarkerId);
-                } else if (markerType === artoolkit.BARCODE_MARKER) {
-                    currentMarkerId = ev.data.marker.idMatrix;
-                    parent.log("Barcode:" + currentMarkerId);
-                }
-                else if (markerType == artoolkit.NFT_MARKER) {
-                    currentMarkerId = ev.data.marker.id;
-                    parent.log("NFT:" + currentMarkerId);
-                }
-                if (ev.data.type >= 0) {
-                    var currentMarkerNumber = currentMarkerId * 10000000 + currentMarkerId;
-                    model = parent.getModel(ev);
-                    if (model) {
-                        parent.setProjectionMatrix(parent.markerRoot.matrix, ev.data.matrixGL_RH);
-                        parent.markerRoot.visible = true;
-                    }
-                    //parent.renderer.setClearColor(0xd3df56, 1); 
-                }
-                else {
-                    model = parent.getModel(ev);
-                    parent.markerRoot.visible = false;
-                }
+                parent.getMarker(ev);
+                // var markerType = ev.data.type;
+                // var currentMarkerId;
+                // var model;
+                // if (markerType === artoolkit.PATTERN_MARKER) {
+                //     currentMarkerId = ev.data.marker.idPatt;
+                //     parent.log("Pattern:" + currentMarkerId);
+                // } else if (markerType === artoolkit.BARCODE_MARKER) {
+                //     currentMarkerId = ev.data.marker.idMatrix;
+                //     parent.log("Barcode:" + currentMarkerId);
+                // }
+                // else if (markerType == artoolkit.NFT_MARKER) {
+                //     currentMarkerId = ev.data.marker.id;
+                //     parent.log("NFT:" + currentMarkerId);
+                // }
+                // if (ev.data.type >= 0) {
+                //     var currentMarkerNumber = currentMarkerId * 10000000 + currentMarkerId;
+                //     model = parent.getModel(ev);
+                //     if (model) {
+                //         parent.setProjectionMatrix(parent.markerRoot.matrix, ev.data.matrixGL_RH);
+                //         parent.markerRoot.visible = true;
+                //     }
+                //     //parent.renderer.setClearColor(0xd3df56, 1); 
+                // }
+                // else {
+                //     model = parent.getModel(ev);
+                //     parent.markerRoot.visible = false;
+                // }
             });
 
             arController.addEventListener('getNFTMarker', function (ev) {
-                var marker = ev.data.marker;
-                var obj;
-                parent.log('Found NFT marker', marker, obj);
-                obj = this.threeNFTMarkers[marker.id];
-                if (obj) {
-                    obj.matrix.fromArray(ev.data.matrixGL_RH);
-                    obj.visible = true;
-                }
+                parent.getMarker(ev);
+                // var marker = ev.data.marker;
+                // var obj;
+                // parent.log('Found NFT marker', marker, obj);
+                // obj = this.threeNFTMarkers[marker.id];
+                // if (obj) {
+                //     obj.matrix.fromArray(ev.data.matrixGL_RH);
+                //     obj.visible = true;
+                // }
             });
 
             arController.addEventListener('lostNFTMarker', function (ev) {
-                var marker = ev.data.marker;
-                var obj;
-                parent.log('Lost NFT marker', marker, obj);
-                obj = this.threeNFTMarkers[marker.id];
-                if (obj) {
-                    obj.matrix.fromArray(ev.data.matrixGL_RH);
-                    // TODO make it maybe more stable, making the object not visible only after some ms of lost tracking?
-                    obj.visible = false;
-                }
+                parent.getMarker(ev);
+                // var marker = ev.data.marker;
+                // var obj;
+                // parent.log('Lost NFT marker', marker, obj);
+                // obj = this.threeNFTMarkers[marker.id];
+                // if (obj) {
+                //     obj.matrix.fromArray(ev.data.matrixGL_RH);
+                //     // TODO make it maybe more stable, making the object not visible only after some ms of lost tracking?
+                //     obj.visible = false;
+                // }
             });
 
             arController.addEventListener('getMultiMarker', function (ev) {
-                var obj = this.threeMultiMarkers[ev.data.multiMarkerId];
-                if (obj) {
-                    obj.matrix.fromArray(ev.data.matrixGL_RH);
-                    obj.visible = true;
-                }
+                parent.getMarker(ev);
+                // var obj = this.threeMultiMarkers[ev.data.multiMarkerId];
+                // if (obj) {
+                //     obj.matrix.fromArray(ev.data.matrixGL_RH);
+                //     obj.visible = true;
+                // }
             });
 
             arController.addEventListener('getMultiMarkerSub', function (ev) {
-                var marker = ev.data.multiMarkerId;
-                var subMarkerID = ev.data.markerIndex;
-                var subMarker = ev.data.marker;
-                var obj = this.threeMultiMarkers[marker];
-                if (obj && obj.markers && obj.markers[subMarkerID]) {
-                    var sub = obj.markers[subMarkerID];
-                    sub.matrix.fromArray(ev.data.matrixGL_RH);
-                    sub.visible = (subMarker.visible >= 0);
-                }
+                parent.getMarker(ev);
+                // var marker = ev.data.multiMarkerId;
+                // var subMarkerID = ev.data.markerIndex;
+                // var subMarker = ev.data.marker;
+                // var obj = this.threeMultiMarkers[marker];
+                // if (obj && obj.markers && obj.markers[subMarkerID]) {
+                //     var sub = obj.markers[subMarkerID];
+                //     sub.matrix.fromArray(ev.data.matrixGL_RH);
+                //     sub.visible = (subMarker.visible >= 0);
+                // }
             });
 
             arController.threePatternMarkers = {};
@@ -393,6 +428,16 @@
                 }
             }
         }
+        WebAR.prototype.getMarker = function (event) {
+            if (event.data.type >= 0) {
+                this.setProjectionMatrix(this.markerRoot.matrix, event.data.matrixGL_RH);
+                this.markerRoot.visible = true;
+                this.loadModel(event);
+            }
+            else {
+                this.markerRoot.visible = false;
+            }
+        }
     </script>
     <script>
         window.addEventListener('artoolkit-loaded', () => {
@@ -400,16 +445,30 @@
                 maxARVideoSize: 320
             };
             var webAR = new WebAR(document.getElementById('webcamVideo'), document.getElementById('sceneCanvas'), document.getElementById('message'), config, true);
+            document.getElementById('following').addEventListener('change', function (e) {
+                console.log(e);
+                webAR.config.following = e.target.checked;
+            });
             webAR.loadMarker = function () {
                 this.arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
                 this.arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
+                //this.arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_4x4);
+                this.arController.loadMarker('Data/patt.hiro', function (markerId) {
+                });
                 this.arController.loadMarker('Data/patt.kanji', function (markerId) {
+                });
+                this.arController.loadMarker('Data/patt.9999', function (markerId) {
                 });
                 this.arController.loadNFTMarker('DataNFT/pinball', function (markerId) {
                 });
             };
-            webAR.getModel = function (ev) {
-                return this.markerRoot;
+            webAR.loadModel = function (event) {
+                var number = event.data.type * 100000 + this.arController.getMatrixCodeType() * 10000 + 2 +
+                    event.data.marker.idPatt +
+                    event.data.marker.idMatrix +
+                    (event.data.type === 2 ? event.data.maker.id : -1);
+                this.log(number);
+                
             };
             webAR.start();
         });
