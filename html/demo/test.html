@@ -238,9 +238,6 @@
             log('arcontroller created');
             arController.image = this.video;
 
-            // arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
-            // arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
-
             this.arController = arController;
             this.orientationchange();
             log('start threejs');
@@ -285,10 +282,10 @@
             mesh.material.shading = THREE.FlatShading;
             mesh.position.z = 0.5;
             mesh.rotation.x = Math.PI / 2;
-
             markerRoot.add(mesh);
+
             scene.add(markerRoot);
-            this.model = markerRoot;
+            this.markerRoot = markerRoot;
             var animation = function (time) {
                 renderer.render(scene, camera);
             }
@@ -388,6 +385,13 @@
         }
     </script>
     <script>
+        var mesh = new THREE.Mesh(
+            new THREE.TorusGeometry(0.3, 0.2, 8, 8),
+            new THREE.MeshNormalMaterial()
+        );
+        mesh.material.shading = THREE.FlatShading;
+        mesh.position.z = 0.5;
+        mesh.rotation.x = Math.PI / 2;
         window.addEventListener('artoolkit-loaded', () => {
             var config = {
                 maxARVideoSize: 320
@@ -400,7 +404,7 @@
                 });
             };
             webAR.getModel = function (ev) {
-                return this.model;
+                return this.markerRoot;
             };
             webAR.start();
         });
