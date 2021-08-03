@@ -101,15 +101,16 @@
     <div id="tools">
         <label>跟随模式:<input id="following" type="checkbox"></label>
     </div>
+    <script src="lib/zxing-js/zxing-browser.min.js"></script>
     <script type='text/javascript'>
-        var artoolkit_wasm_url = 'build/artoolkit_wasm.wasm';
+        var artoolkit_wasm_url = 'lib/jsartoolkit/artoolkit_wasm.wasm';
     </script>
-    <script src="build/artoolkit_wasm.js"></script>
-    <script src="three.js/three.min.js"></script>
+    <script src="lib/jsartoolkit/artoolkit_wasm.js"></script>
+    <script src="lib/three.js/three.min.js"></script>
     <script src="js/artoolkit.three.js"></script>
     <!-- gltf -->
-    <script src="three.js/js/controls/OrbitControls.js"></script>
-    <script src="three.js/js/loaders/GLTFLoader.js"></script>
+    <script src="lib/three.js/js/controls/OrbitControls.js"></script>
+    <script src="lib/three.js/js/loaders/GLTFLoader.js"></script>
     <script>
         function WebAR(video, canvas, message, config, debug) {
             this.debug = debug || false;
@@ -117,7 +118,7 @@
             this.canvas = canvas;
             this.message = message;
             this.config = {
-                cameraParam: "Data/camera_para-iPhone 5 rear 640x480 1.0m.dat",
+                cameraParam: "DATA/camera_para-iPhone 5 rear 640x480 1.0m.dat",
                 maxARVideoSize: 640,
                 width: 640,
                 height: 480,
@@ -129,6 +130,7 @@
                     this.config[key] = config[key];
                 }
             }
+            var context = canvas.getContext('webgl2', { alpha: true });
         }
         //version
         WebAR.version = ".01";
@@ -178,6 +180,12 @@
                         });
                         parent.resize();
                         parent.video.play().then(function () {
+                            var codeReader = new ZXingBrowser.BrowserMultiFormatReader();
+                            codeReader.decodeFromVideoElement(parent.video, (result, error, controls) => {
+                                if (result) {
+                                    parent.log("QRCODE:" + result.text);
+                                }
+                            });
                             if (window.artoolkit) {
                                 var cameraParam = new ARCameraParam(parent.config.cameraParam, function () {
                                     parent.ARCameraParamOnLoad(cameraParam);
@@ -335,57 +343,74 @@
             }
 
             var loadGltf = function () {
-                var file = "test.glb";
+                var file = "DATA/models/Flamingo.glb";
                 var loader = new THREE.GLTFLoader();
                 var camera2 = camera;
                 loader.load(file, function (gltf) {
                     var gltfScene = gltf.scene;
                     markerRoot.add(gltfScene);
+                    markerRoot.add(gltfScene);
                     gltfScene.updateMatrixWorld();
+                    //============================================
+                    // model = gltf.scene.children[0];
+                    // model.position.z = 0;
+                    // model.position.x = 100;
+                    // model.position.y = 100;
 
-                    const box = new THREE.Box3().setFromObject(gltfScene);
-                    const size = box.getSize(new THREE.Vector3()).length();
-                    const center = box.getCenter(new THREE.Vector3());
-                    gltfScene.position.x += (gltfScene.position.x - center.x);
-                    gltfScene.position.y += (gltfScene.position.y - center.y);
-                    gltfScene.position.z += (gltfScene.position.z - center.z);
-                    //controls.maxDistance = size * 10;
-                    var camera = camera2;
-                    camera.near = size / 100;
-                    camera.far = size * 100;
-                    camera.updateProjectionMatrix();
-                    camera.position.copy(center);
-                    camera.position.x += size / 2.0;
-                    camera.position.y += size / 5.0;
-                    camera.position.z += size / 2.0;
-                    camera.lookAt(center);
-                    //
-                    //
-                    var modelBox3 = box;
-                    var meshBox3 = new THREE.Box3();
-                    modelBox3.expandByObject(gltfScene);
-                    var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
-                    gltfScene.traverse(function (value) {
-                        if (value.isMesh) {
-                            value.castShadow = true;
-                            value.receiveShadow = true;
-                            meshBox3.setFromObject(value);
-                            var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
-                            if (isNaN(worldPs.x)) return;
-                            value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
-                            value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
-                        }
-                    });
+                    // var animation = gltf.animations[0];
+                    // var mixer = new THREE.AnimationMixer(model);
+                    // var action = mixer.clipAction(animation);
+                    // action.play();
+
+                    // markerRoot.add(model);
+                    //============================================
+                    // var gltfScene = gltf.scene;
+                    // markerRoot.add(gltfScene);
+                    // gltfScene.updateMatrixWorld();
+
+                    // const box = new THREE.Box3().setFromObject(gltfScene);
+                    // const size = box.getSize(new THREE.Vector3()).length();
+                    // const center = box.getCenter(new THREE.Vector3());
+                    // gltfScene.position.x += (gltfScene.position.x - center.x);
+                    // gltfScene.position.y += (gltfScene.position.y - center.y);
+                    // gltfScene.position.z += (gltfScene.position.z - center.z);
+                    // //controls.maxDistance = size * 10;
+                    // var camera = camera2;
+                    // camera.near = size / 100;
+                    // camera.far = size * 100;
+                    // camera.updateProjectionMatrix();
+                    // camera.position.copy(center);
+                    // camera.position.x += size / 2.0;
+                    // camera.position.y += size / 5.0;
+                    // camera.position.z += size / 2.0;
+                    // camera.lookAt(center);
+                    // //
+                    // //
+                    // var modelBox3 = box;
+                    // var meshBox3 = new THREE.Box3();
+                    // modelBox3.expandByObject(gltfScene);
+                    // var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
+                    // gltfScene.traverse(function (value) {
+                    //     if (value.isMesh) {
+                    //         value.castShadow = true;
+                    //         value.receiveShadow = true;
+                    //         meshBox3.setFromObject(value);
+                    //         var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
+                    //         if (isNaN(worldPs.x)) return;
+                    //         value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
+                    //         value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
+                    //     }
+                    // });
                 });
             }
 
-            setTimeout(() => {
-                loadMesh();
-            }, 0);
-
             // setTimeout(() => {
-            //     loadGltf();
+            //     loadMesh();
             // }, 0);
+
+            setTimeout(() => {
+                loadGltf();
+            }, 0);
 
             ////=load test model end=////
 
@@ -467,16 +492,11 @@
                 this.arController.setPatternDetectionMode(artoolkit.AR_TEMPLATE_MATCHING_COLOR_AND_MATRIX);
                 this.arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_3x3);
                 //this.arController.setMatrixCodeType(artoolkit.AR_MATRIX_CODE_4x4);
-                this.arController.loadMarker('Data/patt.hiro', function (markerId) {
+                this.arController.loadMarker('DATA/patt.hiro', function (markerId) {
                 });
-                this.arController.loadMarker('Data/patt.kanji', function (markerId) {
+                this.arController.loadMarker('DATA/patt.kanji', function (markerId) {
                 });
-                this.arController.loadMarker('Data/patt.9999', function (markerId) {
-                });
-                var list = [];
-                for (var i = 1; i < 6; i++) {
-                    list.push('DATANFT/' + i);
-                }
+                var list = ['DATANFT/pinball'];
                 this.arController.loadNFTMarkers(list, function (markerIds) {
                 });
             };

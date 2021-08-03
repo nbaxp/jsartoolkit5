@@ -1,0 +1,56 @@
+<script src="https://unpkg.com/react@17/umd/react.development.js"></script>
+<script src="https://unpkg.com/react-dom@17/umd/react-dom.development.js"></script>
+<script src="https://unpkg.com/babel-standalone@6/babel.min.js"></script>
+
+<style>
+body {
+  margin: 0;
+  padding: 0;
+}
+
+.container {
+  width: 1200px;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+header {
+  background: black;
+  color: white;
+  padding: 15px 0;
+}
+</style>
+
+<div id="root"></div>
+<script type="text/babel">
+  function Header() {
+    return (
+      <header>
+        <div className="container">
+          My great app
+        </div>
+      </header>
+    );
+  }
+
+  function Body() {
+    return (
+      <main>
+        <div className="container">
+          <h1>Home</h1>
+          <p>This is one great app.</p>
+        </div>
+      </main>
+    );
+  }
+
+  function App() {
+    return (
+      <div>
+        <Header />
+        <Body />
+      </div>
+    );
+  }
+  ReactDOM.render(<App />, document.getElementById('root'));
+</script>

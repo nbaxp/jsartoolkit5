@@ -43,11 +43,11 @@
     <video id='video'></video>
     <canvas id='canvas'></canvas>
     <script type='text/javascript'>
-        var artoolkit_wasm_url = '../build/artoolkit_wasm.wasm';
+        var artoolkit_wasm_url = 'lib/jsartoolkit/artoolkit_wasm.wasm';
     </script>
-    <script src="/build/artoolkit_wasm.js"></script>
-    <script src="/examples/js/third_party/three.js/three.min.js"></script>
-    <script src="/js/artoolkit.three.js"></script>
+    <script src="lib/jsartoolkit/artoolkit_wasm.js"></script>
+    <script src="lib/three.js/three.min.js"></script>
+    <script src="js/artoolkit.three.js"></script>
     <script>
         function isMobile() {
             return /Android|mobile|iPad|iPhone/i.test(navigator.userAgent);
@@ -323,6 +323,9 @@
     <script>
         function loadMarker(arController) {
             arController.loadMarker('/examples/Data/patt.kanji', function (markerId) {
+            });
+            var list = ['DATANFT/pinball'];
+            arController.loadNFTMarkers(list, function (markerIds) {
             });
         }
     </script>
