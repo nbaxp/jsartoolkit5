@@ -111,6 +111,9 @@
     <!-- gltf -->
     <script src="lib/three.js/js/controls/OrbitControls.js"></script>
     <script src="lib/three.js/js/loaders/GLTFLoader.js"></script>
+    <!-- fbx -->
+    <script src="lib/three.js/js/loaders/FBXLoader.js"></script>
+    <script src="lib/three.js/js/libs/fflate.min.js"></script>
     <script>
         function WebAR(video, canvas, message, config, debug) {
             this.debug = debug || false;
@@ -313,9 +316,10 @@
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setClearColor(0x000000, 0);
             var scene = new THREE.Scene();
-            var camera = new THREE.PerspectiveCamera(45, this.video.width / this.video.height, 0.1, 10000);
+            var camera = new THREE.PerspectiveCamera(45, this.canvas.width / this.canvas.height, 0.1, 10000);
             this.camera = camera;
-            camera.position.z = 25;
+            camera.position.set(0, 0, 1);
+            camera.lookAt(new THREE.Vector3(0, 0, 0));
             camera.matrixAutoUpdate = false;
 
             var light = new THREE.PointLight(0xffffff);
@@ -342,15 +346,62 @@
                 markerRoot.add(mesh);
             }
 
-            var loadGltf = function () {
-                var file = "DATA/models/Flamingo.glb";
-                var loader = new THREE.GLTFLoader();
+            var getLoader = function (file) {
+                if (file.endsWith('.glb') || file.endsWith('.gltf')) {
+                    return new THREE.GLTFLoader();
+                }
+                else if (file.endsWith('.fbx')) {
+                    return new THREE.FBXLoader();
+                }
+            }
+
+            var loadModel = function () {
+                var file = "test.glb";
+                var loader = getLoader(file);
                 var camera2 = camera;
-                loader.load(file, function (gltf) {
-                    var gltfScene = gltf.scene;
-                    markerRoot.add(gltfScene);
-                    markerRoot.add(gltfScene);
-                    gltfScene.updateMatrixWorld();
+                loader.load(file, function (object) {
+                    var scene;
+                    if (file.endsWith("glb") || file.endsWith("gltf")) {
+                        scene = object.scene || object.scenes[0];
+                    }
+                    else {
+                        scene = object
+                    }
+                    //
+                    scene.updateMatrixWorld();
+                    const box = new THREE.Box3().setFromObject(scene);
+                    const size = box.getSize(new THREE.Vector3()).length();
+                    const center = box.getCenter(new THREE.Vector3());
+                    scene.position.x += (scene.position.x - center.x);
+                    scene.position.y += (scene.position.y - center.y);
+                    scene.position.z += (scene.position.z - center.z);
+                    camera.near = size / 100;
+                    camera.far = size * 100;
+                    camera.updateProjectionMatrix();
+                    camera.position.copy(center);
+                    camera.position.x += size / 2.0;
+                    camera.position.y += size / 5.0;
+                    camera.position.z += size / 2.0;
+                    camera.lookAt(center);
+                    markerRoot.add(scene);
+                    var modelBox3 = box;
+                    var meshBox3 = new THREE.Box3();
+                    modelBox3.expandByObject(scene);
+                    var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
+                    scene.traverse(function (value) {
+                        if (value.isMesh) {
+                            value.castShadow = true;
+                            value.receiveShadow = true;
+                            meshBox3.setFromObject(value);
+                            var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
+                            if (isNaN(worldPs.x)) return;
+                            value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
+                            value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
+                        }
+                    });
+                    /////////////////////////////////////////////////
+
+
                     //============================================
                     // model = gltf.scene.children[0];
                     // model.position.z = 0;
@@ -409,7 +460,7 @@
             // }, 0);
 
             setTimeout(() => {
-                loadGltf();
+                loadModel();
             }, 0);
 
             ////=load test model end=////
@@ -479,11 +530,13 @@
         }
     </script>
     <script>
+        var root;
         window.addEventListener('artoolkit-loaded', () => {
             var config = {
                 maxARVideoSize: 320
             };
             var webAR = new WebAR(document.getElementById('webcamVideo'), document.getElementById('sceneCanvas'), document.getElementById('message'), config, true);
+            root = webAR;
             document.getElementById('following').addEventListener('change', function (e) {
                 console.log(e);
                 webAR.config.following = e.target.checked;
