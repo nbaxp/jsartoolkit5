@@ -263,9 +263,13 @@
                 this.arController.videoWidth = window.orientation === 0 ? this.video.height : this.video.width;
                 this.arController.videoHeight = window.orientation === 0 ? this.video.width : this.video.height;
             }
+            var width = window.orientation === 0 ? this.canvas.height : this.canvas.width;
+            var height = window.orientation === 0 ? this.canvas.width : this.canvas.height;
+            if (this.camera) {
+                this.camera.aspect = width / height;
+                camera.updateProjectionMatrix();
+            }
             if (this.renderer) {
-                var width = window.orientation === 0 ? this.canvas.height : this.canvas.width;
-                var height = window.orientation === 0 ? this.canvas.width : this.canvas.height;
                 this.renderer.setSize(width, height);
             }
         }
@@ -315,13 +319,14 @@
             this.renderer = renderer;
             renderer.setPixelRatio(window.devicePixelRatio);
             renderer.setClearColor(0x000000, 0);
+            renderer.gammaOutput = true;
             var scene = new THREE.Scene();
             var camera = new THREE.PerspectiveCamera(45, this.canvas.width / this.canvas.height, 0.1, 10000);
             this.camera = camera;
-            camera.position.set(0, 0, 1);
+            camera.position.set(0, 0, 5);
             camera.lookAt(new THREE.Vector3(0, 0, 0));
             camera.matrixAutoUpdate = false;
-
+            this.camera = camera;
             var light = new THREE.PointLight(0xffffff);
             light.position.set(400, 500, 100);
             scene.add(light);
@@ -355,6 +360,42 @@
                 }
             }
 
+            var setContent = function (scene) {
+                scene.updateMatrixWorld();
+                const box = new THREE.Box3().setFromObject(scene);
+                const size = box.getSize(new THREE.Vector3()).length();
+                const center = box.getCenter(new THREE.Vector3());
+                scene.position.x += (scene.position.x - center.x);
+                scene.position.y += (scene.position.y - center.y);
+                scene.position.z += (scene.position.z - center.z);
+                //controls.maxDistance = size * 10;
+                camera.near = size / 100;
+                camera.far = size * 100;
+                camera.updateProjectionMatrix();
+                camera.position.copy(center);
+                camera.position.x += size / 2.0;
+                camera.position.y += size / 5.0;
+                camera.position.z += size / 2.0;
+                camera.lookAt(center);
+                markerRoot.add(scene);
+
+                var modelBox3 = box;
+                var meshBox3 = new THREE.Box3();
+                modelBox3.expandByObject(scene);
+                var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
+                scene.traverse(function (value) {
+                    if (value.isMesh) {
+                        value.castShadow = true;
+                        value.receiveShadow = true;
+                        meshBox3.setFromObject(value);
+                        var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
+                        if (isNaN(worldPs.x)) return;
+                        value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
+                        value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
+                    }
+                });
+            };
+
             var loadModel = function () {
                 var file = "test.glb";
                 var loader = getLoader(file);
@@ -367,91 +408,7 @@
                     else {
                         scene = object
                     }
-                    //
-                    scene.updateMatrixWorld();
-                    const box = new THREE.Box3().setFromObject(scene);
-                    const size = box.getSize(new THREE.Vector3()).length();
-                    const center = box.getCenter(new THREE.Vector3());
-                    scene.position.x += (scene.position.x - center.x);
-                    scene.position.y += (scene.position.y - center.y);
-                    scene.position.z += (scene.position.z - center.z);
-                    camera.near = size / 100;
-                    camera.far = size * 100;
-                    camera.updateProjectionMatrix();
-                    camera.position.copy(center);
-                    camera.position.x += size / 2.0;
-                    camera.position.y += size / 5.0;
-                    camera.position.z += size / 2.0;
-                    camera.lookAt(center);
-                    markerRoot.add(scene);
-                    var modelBox3 = box;
-                    var meshBox3 = new THREE.Box3();
-                    modelBox3.expandByObject(scene);
-                    var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
-                    scene.traverse(function (value) {
-                        if (value.isMesh) {
-                            value.castShadow = true;
-                            value.receiveShadow = true;
-                            meshBox3.setFromObject(value);
-                            var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
-                            if (isNaN(worldPs.x)) return;
-                            value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
-                            value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
-                        }
-                    });
-                    /////////////////////////////////////////////////
-
-
-                    //============================================
-                    // model = gltf.scene.children[0];
-                    // model.position.z = 0;
-                    // model.position.x = 100;
-                    // model.position.y = 100;
-
-                    // var animation = gltf.animations[0];
-                    // var mixer = new THREE.AnimationMixer(model);
-                    // var action = mixer.clipAction(animation);
-                    // action.play();
-
-                    // markerRoot.add(model);
-                    //============================================
-                    // var gltfScene = gltf.scene;
-                    // markerRoot.add(gltfScene);
-                    // gltfScene.updateMatrixWorld();
-
-                    // const box = new THREE.Box3().setFromObject(gltfScene);
-                    // const size = box.getSize(new THREE.Vector3()).length();
-                    // const center = box.getCenter(new THREE.Vector3());
-                    // gltfScene.position.x += (gltfScene.position.x - center.x);
-                    // gltfScene.position.y += (gltfScene.position.y - center.y);
-                    // gltfScene.position.z += (gltfScene.position.z - center.z);
-                    // //controls.maxDistance = size * 10;
-                    // var camera = camera2;
-                    // camera.near = size / 100;
-                    // camera.far = size * 100;
-                    // camera.updateProjectionMatrix();
-                    // camera.position.copy(center);
-                    // camera.position.x += size / 2.0;
-                    // camera.position.y += size / 5.0;
-                    // camera.position.z += size / 2.0;
-                    // camera.lookAt(center);
-                    // //
-                    // //
-                    // var modelBox3 = box;
-                    // var meshBox3 = new THREE.Box3();
-                    // modelBox3.expandByObject(gltfScene);
-                    // var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
-                    // gltfScene.traverse(function (value) {
-                    //     if (value.isMesh) {
-                    //         value.castShadow = true;
-                    //         value.receiveShadow = true;
-                    //         meshBox3.setFromObject(value);
-                    //         var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
-                    //         if (isNaN(worldPs.x)) return;
-                    //         value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
-                    //         value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
-                    //     }
-                    // });
+                    setContent(scene);
                 });
             }
 
