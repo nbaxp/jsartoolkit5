@@ -108,12 +108,13 @@
     <script src="lib/jsartoolkit/artoolkit_wasm.js"></script>
     <script src="lib/three.js/three.min.js"></script>
     <script src="js/artoolkit.three.js"></script>
-    <!-- gltf -->
+    <!-- loader -->
     <script src="lib/three.js/js/controls/OrbitControls.js"></script>
     <script src="lib/three.js/js/loaders/GLTFLoader.js"></script>
-    <!-- fbx -->
     <script src="lib/three.js/js/loaders/FBXLoader.js"></script>
     <script src="lib/three.js/js/libs/fflate.min.js"></script>
+    <script src="lib/three.js/js/loaders/OBJLoader.js"></script>
+    <script src="lib/three.js/js/loaders/3MFLoader.js"></script>
     <script>
         function WebAR(video, canvas, message, config, debug) {
             this.debug = debug || false;
@@ -267,7 +268,7 @@
             var height = window.orientation === 0 ? this.canvas.width : this.canvas.height;
             if (this.camera) {
                 this.camera.aspect = width / height;
-                camera.updateProjectionMatrix();
+                this.camera.updateProjectionMatrix();
             }
             if (this.renderer) {
                 this.renderer.setSize(width, height);
@@ -321,18 +322,17 @@
             renderer.setClearColor(0x000000, 0);
             renderer.gammaOutput = true;
             var scene = new THREE.Scene();
-            var camera = new THREE.PerspectiveCamera(45, this.canvas.width / this.canvas.height, 0.1, 10000);
-            this.camera = camera;
-            camera.position.set(0, 0, 5);
-            camera.lookAt(new THREE.Vector3(0, 0, 0));
+            var camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+            camera.position.z = 250;
             camera.matrixAutoUpdate = false;
+            scene.add(camera);
             this.camera = camera;
+
             var light = new THREE.PointLight(0xffffff);
             light.position.set(400, 500, 100);
             scene.add(light);
-            scene.add(camera);
 
-            var markerRoot = new THREE.Scene();
+            var markerRoot = new THREE.Object3D();
             markerRoot.matrixAutoUpdate = false;
             scene.add(markerRoot);
             this.markerRoot = markerRoot;
@@ -358,46 +358,55 @@
                 else if (file.endsWith('.fbx')) {
                     return new THREE.FBXLoader();
                 }
+                else if (file.endsWith('.obj')) {
+                    return new THREE.OBJLoader();
+                }
+                else if (file.endsWith('.3mf')) {
+                    return new THREE.ThreeMFLoader();
+                }
             }
 
-            var setContent = function (scene) {
-                scene.updateMatrixWorld();
-                const box = new THREE.Box3().setFromObject(scene);
-                const size = box.getSize(new THREE.Vector3()).length();
-                const center = box.getCenter(new THREE.Vector3());
-                scene.position.x += (scene.position.x - center.x);
-                scene.position.y += (scene.position.y - center.y);
-                scene.position.z += (scene.position.z - center.z);
-                //controls.maxDistance = size * 10;
-                camera.near = size / 100;
-                camera.far = size * 100;
-                camera.updateProjectionMatrix();
-                camera.position.copy(center);
-                camera.position.x += size / 2.0;
-                camera.position.y += size / 5.0;
-                camera.position.z += size / 2.0;
-                camera.lookAt(center);
-                markerRoot.add(scene);
+            var setContent = function (object) {
+                object.updateMatrixWorld();
 
-                var modelBox3 = box;
-                var meshBox3 = new THREE.Box3();
-                modelBox3.expandByObject(scene);
-                var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
-                scene.traverse(function (value) {
-                    if (value.isMesh) {
-                        value.castShadow = true;
-                        value.receiveShadow = true;
-                        meshBox3.setFromObject(value);
-                        var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
-                        if (isNaN(worldPs.x)) return;
-                        value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
-                        value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
-                    }
-                });
+                // const box = new THREE.Box3().setFromObject(scene);
+                // const size = box.getSize(new THREE.Vector3()).length();
+                // const center = box.getCenter(new THREE.Vector3());
+                // scene.position.x += (scene.position.x - center.x);
+                // scene.position.y += (scene.position.y - center.y);
+                // scene.position.z += (scene.position.z - center.z);
+                // //controls.maxDistance = size * 10;
+                // camera.near = size / 100;
+                // camera.far = size * 100;
+                // camera.updateProjectionMatrix();
+                // camera.position.copy(center);
+                // camera.position.x += size / 2.0;
+                // camera.position.y += size / 5.0;
+                // camera.position.z += size / 2.0;
+                // camera.lookAt(center);
+                object.position.y = - 95;
+
+                scene.add(object);
+
+                // var modelBox3 = box;
+                // var meshBox3 = new THREE.Box3();
+                // modelBox3.expandByObject(scene);
+                // var modelWorldPs = new THREE.Vector3().addVectors(modelBox3.max, modelBox3.min).multiplyScalar(0.5);
+                // scene.traverse(function (value) {
+                //     if (value.isMesh) {
+                //         value.castShadow = true;
+                //         value.receiveShadow = true;
+                //         meshBox3.setFromObject(value);
+                //         var worldPs = new THREE.Vector3().addVectors(meshBox3.max, meshBox3.min).multiplyScalar(0.5);
+                //         if (isNaN(worldPs.x)) return;
+                //         value.worldDir = new THREE.Vector3().subVectors(worldPs, modelWorldPs).normalize();
+                //         value.userData.oldPs = value.getWorldPosition(new THREE.Vector3());
+                //     }
+                // });
             };
 
             var loadModel = function () {
-                var file = "test.glb";
+                var file = "test.obj";
                 var loader = getLoader(file);
                 var camera2 = camera;
                 loader.load(file, function (object) {
@@ -412,13 +421,13 @@
                 });
             }
 
-            // setTimeout(() => {
-            //     loadMesh();
-            // }, 0);
-
             setTimeout(() => {
-                loadModel();
+                loadMesh();
             }, 0);
+
+            // setTimeout(() => {
+            //     loadModel();
+            // }, 0);
 
             ////=load test model end=////
 
@@ -482,7 +491,7 @@
                 this.loadModel(event);
             }
             else {
-                this.markerRoot.visible = false;
+                //this.markerRoot.visible = false;
             }
         }
     </script>
